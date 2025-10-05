@@ -1,0 +1,36 @@
+{
+  "name": "@khaveeai/react",
+  "version": "0.1.0",
+  "description": "React components and hooks for VRM AI avatars",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@khaveeai/core": "workspace:*",
+    "@pixiv/three-vrm": "^3.4.2",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.3.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/three": "^0.180.0",
+    "react": "^19.1.0",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}

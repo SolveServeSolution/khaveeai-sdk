@@ -1,0 +1,26 @@
+{
+  "name": "@khaveeai/providers-mock",
+  "version": "0.1.0",
+  "description": "Mock providers for KhaveeAI development",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@khaveeai/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

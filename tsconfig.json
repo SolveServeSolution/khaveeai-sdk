@@ -19,8 +19,14 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": ["./src/*"],
+      "@khaveeai/core": ["./packages/core/src/index.ts"],
+      "@khaveeai/react": ["./packages/react/src/index.ts"],
+      "@khaveeai/providers-openai": ["./packages/providers/openai/src/index.ts"],
+      "@khaveeai/providers-azure": ["./packages/providers/azure/src/index.ts"],
+      "@khaveeai/providers-mock": ["./packages/providers/mock/src/index.ts"]
+    },
+    "baseUrl": "."
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
