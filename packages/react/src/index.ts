@@ -1,3 +1,4 @@
 export { KhaveeProvider, useKhavee } from './KhaveeProvider';
-export { VRMAvatar } from './VRMAvatar';
-export { useLLM, useVoice, useAnimation } from './hooks';
+export { VRMAvatar, useVRM, useVRMExpressions, useVRMAnimations } from './VRMAvatar';
+export type { AnimationConfig, AnimationRegistry } from './VRMAvatar';
+export { useLLM, useVoice } from './hooks';

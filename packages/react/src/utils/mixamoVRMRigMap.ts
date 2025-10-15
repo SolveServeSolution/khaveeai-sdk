@@ -1,6 +1,9 @@
 /**
  * A map from Mixamo rig name to VRM Humanoid bone name
  */
+/**
+ * A map from Mixamo rig name to VRM Humanoid bone name
+ */
 export const mixamoVRMRigMap = {
   mixamorigHips: "hips",
   mixamorigSpine: "spine",
@@ -23,7 +26,7 @@ export const mixamoVRMRigMap = {
   mixamorigLeftHandMiddle3: "leftMiddleDistal",
   mixamorigLeftHandRing1: "leftRingProximal",
   mixamorigLeftHandRing2: "leftRingIntermediate",
-  mixamorigLeftHandRing3: "rightRingDistal",
+  mixamorigLeftHandRing3: "leftRingDistal",
   mixamorigLeftHandPinky1: "leftLittleProximal",
   mixamorigLeftHandPinky2: "leftLittleIntermediate",
   mixamorigLeftHandPinky3: "leftLittleDistal",

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useLLM, useVoice, useAnimation } from '@khaveeai/react';
+import { useLLM, useVoice } from '@khaveeai/react';
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
@@ -10,7 +10,6 @@ export function ChatInterface() {
   
   const { streamChat } = useLLM();
   const { speak } = useVoice();
-  const { animate } = useAnimation();
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -29,17 +28,6 @@ export function ChatInterface() {
         if (chunk.type === 'text') {
           assistantResponse += chunk.delta;
         }
-      }
-
-      // Check for animation triggers in the response
-      const animationMatch = assistantResponse.match(/\*trigger_animation:\s*(\w+)\*/);
-      if (animationMatch) {
-        const animationName = animationMatch[1];
-        console.log(`🎭 Triggering animation: ${animationName}`);
-        animate(animationName);
-        
-        // Remove the animation trigger from the displayed text
-        assistantResponse = assistantResponse.replace(/\*trigger_animation:\s*\w+\*/g, '');
       }
 
       // Add assistant response to chat
@@ -133,10 +121,10 @@ export function ChatInterface() {
           👋 Say Hello
         </button>
         <button
-          onClick={() => setInput("Can you dance for me?")}
+          onClick={() => setInput("Tell me a joke!")}
           className="p-2 text-sm bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
         >
-          💃 Ask to Dance
+          � Tell a Joke
         </button>
         <button
           onClick={() => setInput("I'm feeling sad today")}
@@ -152,38 +140,12 @@ export function ChatInterface() {
         </button>
       </div>
 
-      {/* Expression test buttons */}
-      <div className="mt-4 border-t pt-4">
-        <h3 className="text-sm font-medium mb-2">Test Expressions:</h3>
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => {
-              console.log("Testing happy expression");
-              animate("smile_soft");
-            }}
-            className="p-2 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
-          >
-            😊 Happy
-          </button>
-          <button
-            onClick={() => {
-              console.log("Testing sad expression");
-              animate("sad");
-            }}
-            className="p-2 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-          >
-            😢 Sad
-          </button>
-          <button
-            onClick={() => {
-              console.log("Testing angry expression");
-              animate("punch");
-            }}
-            className="p-2 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-          >
-            😠 Angry
-          </button>
-        </div>
+      {/* Note about expression controls */}
+      <div className="mt-4 p-3 bg-blue-50 rounded text-sm">
+        <p className="text-blue-800">
+          � <strong>Tip:</strong> Expression controls are now located in the 3D scene above the VRM avatar. 
+          Click the floating buttons to test different expressions!
+        </p>
       </div>
     </div>
   );

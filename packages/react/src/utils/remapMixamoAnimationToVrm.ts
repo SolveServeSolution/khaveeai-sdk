@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mixamoVRMRigMap } from "./mixamoVRMRigMap";
 
-export function remapMixamoAnimationToVrm(vrm: any, asset: THREE.Group<THREE.Object3DEventMap>) {
+export function remapMixamoAnimationToVrm(vrm: { humanoid: { getNormalizedBoneNode: (arg0: string) => { (): any; new(): any; getWorldPosition: { (arg0: THREE.Vector3): { (): any; new(): any; y: any; }; new(): any; }; name: any; }; }; scene: { getWorldPosition: (arg0: THREE.Vector3) => { (): any; new(): any; y: any; }; }; meta: { metaVersion: string; }; }, asset: THREE.Group<THREE.Object3DEventMap>) {
   const foundClip = THREE.AnimationClip.findByName(
     asset.animations,
     "mixamo.com"

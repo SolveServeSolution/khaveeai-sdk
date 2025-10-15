@@ -4,20 +4,18 @@ import React from 'react';
 import Link from 'next/link';
 import { KhaveeProvider } from '@khaveeai/react';
 import { MockLLM, MockTTS } from '@khaveeai/providers-mock';
-import { ANIM_REGISTRY } from '../../animationRegistry';
 
 // Import components
 import { ChatInterface } from './components/ChatInterface';
 import { AnimationControls } from './components/AnimationControls';
-import { VRMScene } from './components/VRMScene';
+import { VRMScene } from './components/VRMSceneFixed';
 import { DebugPanel } from './components/DebugPanel';
 
 // Configuration for Khavee SDK with mock providers
 const khaveeConfig = {
   llm: new MockLLM(),
   tts: new MockTTS(),
-  tools: [], // We'll add animation tools
-  animationRegistry: ANIM_REGISTRY
+  tools: []
 };
 
 // Main example page
@@ -54,10 +52,11 @@ export default function KhaveeExamplePage() {
                 <div className="mt-4 text-sm text-gray-600">
                   <p>🎭 <strong>Features:</strong></p>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Real-time animation triggers from AI responses</li>
-                    <li>Mock TTS with viseme simulation</li>
-                    <li>Interactive 3D controls (zoom, rotate)</li>
-                    <li>Multiple VRM model support</li>
+                    <li>VRM model rendering with animations</li>
+                    <li>Multiple animation presets (Idle, Dancing, Fighting)</li>
+                    <li>Smooth animation transitions (0.5s fade)</li>
+                    <li>Interactive expression controls</li>
+                    <li>3D camera controls (zoom, rotate)</li>
                   </ul>
                 </div>
               </div>
@@ -80,31 +79,38 @@ export default function KhaveeExamplePage() {
                 <ul className="space-y-2 text-sm">
                   <li>✅ <strong>KhaveeProvider:</strong> Context provider for SDK configuration</li>
                   <li>✅ <strong>VRMAvatar:</strong> 3D VRM model rendering with Three.js</li>
-                  <li>✅ <strong>useLLM:</strong> AI chat streaming with animation triggers</li>
+                  <li>✅ <strong>Animation System:</strong> Play, stop, and transition animations</li>
+                  <li>✅ <strong>Expression Controls:</strong> Dynamic facial expressions</li>
+                  <li>✅ <strong>useLLM:</strong> AI chat streaming</li>
                   <li>✅ <strong>useVoice:</strong> Text-to-speech with mock provider</li>
-                  <li>✅ <strong>useAnimation:</strong> Dynamic animation playback</li>
                   <li>✅ <strong>Mock Providers:</strong> Development without API keys</li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2">🎮 Try These Interactions</h3>
                 <ul className="space-y-2 text-sm">
-                  <li>💬 <strong>Chat:</strong> Type messages to trigger AI responses</li>
-                  <li>🎭 <strong>Animations:</strong> AI automatically triggers animations</li>
-                  <li>🎵 <strong>Manual Control:</strong> Use animation buttons for direct control</li>
-                  <li>🗣️ <strong>Speech:</strong> Mock TTS simulates realistic timing</li>
-                  <li>� <strong>Debug Panel:</strong> Monitor animation state in real-time</li>
+                  <li>💬 <strong>Chat:</strong> Type messages to get AI responses</li>
+                  <li>🔊 <strong>Voice:</strong> Mock TTS simulates realistic timing</li>
+                  <li>🎬 <strong>Animations:</strong> Play different character animations</li>
+                  <li>😊 <strong>Expressions:</strong> Control facial expressions in real-time</li>
+                  <li>🖱️ <strong>3D Controls:</strong> Zoom and rotate the VRM model</li>
+                  <li>📝 <strong>Components:</strong> Well-organized, modular structure</li>
                 </ul>
               </div>
             </div>
             
-            <div className="mt-6 p-4 bg-gray-50 rounded">
-              <h4 className="font-semibold mb-2">🛠️ Debugging Help</h4>
-              <p className="text-sm text-gray-700">
-                Use the <strong>Debug Panel</strong> to monitor animation state changes. 
-                Check the browser console for detailed logs. The <strong>Expression Test buttons</strong> 
-                allow you to test individual emotions directly.
+            <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
+              <h4 className="font-semibold mb-2 text-blue-900">🎬 Animation System</h4>
+              <p className="text-sm text-gray-700 mb-2">
+                The new animation system is fully integrated! Features include:
               </p>
+              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                <li><strong>Animation Registry:</strong> User-provided animation library</li>
+                <li><strong>Auto-play Idle:</strong> Default "idle" animation plays automatically</li>
+                <li><strong>Smooth Transitions:</strong> 0.5s fade between animations</li>
+                <li><strong>Simple API:</strong> <code className="bg-blue-100 px-1 rounded">animate('name')</code> function</li>
+                <li><strong>4 Presets:</strong> Idle, Swing Dancing, Thriller, Fist Fight</li>
+              </ul>
             </div>
           </div>
         </div>

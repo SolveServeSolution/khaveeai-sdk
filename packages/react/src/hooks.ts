@@ -1,36 +1,186 @@
 "use client";
-import { useContext, useState, useCallback, useEffect } from 'react';
+import { useContext, useState, useCallback } from 'react';
 import { useKhavee } from './KhaveeProvider';
 
-// Mock animation state
-let mockAnimationState = {
-  currentAnimation: null as string | null,
-  visemes: {} as Record<string, number>,
-  expressions: {} as Record<string, number>,
-};
-
+/**
+ * useLLM - Access the configured Large Language Model provider
+ * 
+ * Provides access to the LLM for streaming chat completions. Requires KhaveeProvider
+ * to be configured with an LLM provider.
+ * 
+ * @returns Object containing:
+ *   - streamChat: Function to stream chat completions
+ * 
+ * @throws Error if LLM provider is not configured in KhaveeProvider
+ * 
+ * @example
+ * ```tsx
+ * import { useLLM } from '@khaveeai/react';
+ * 
+ * function ChatInterface() {
+ *   const { streamChat } = useLLM();
+ *   const [response, setResponse] = useState('');
+ *   
+ *   const handleChat = async () => {
+ *     const messages = [
+ *       { role: 'user', content: 'Hello!' }
+ *     ];
+ *     
+ *     for await (const chunk of streamChat({ messages })) {
+ *       if (chunk.type === 'text') {
+ *         setResponse(prev => prev + chunk.delta);
+ *       }
+ *     }
+ *   };
+ *   
+ *   return (
+ *     <div>
+ *       <button onClick={handleChat}>Chat</button>
+ *       <p>{response}</p>
+ *     </div>
+ *   );
+ * }
+ * ```
+ * 
+ * @example
+ * // With conversation history
+ * ```tsx
+ * const { streamChat } = useLLM();
+ * 
+ * const messages = [
+ *   { role: 'system', content: 'You are a helpful assistant.' },
+ *   { role: 'user', content: 'What is React?' },
+ *   { role: 'assistant', content: 'React is a JavaScript library...' },
+ *   { role: 'user', content: 'Tell me more about hooks.' },
+ * ];
+ * 
+ * for await (const chunk of streamChat({ messages })) {
+ *   console.log(chunk.delta);
+ * }
+ * ```
+ */
 export function useLLM() {
   const { config } = useKhavee();
 
+  /**
+   * streamChat - Stream chat completions from the LLM
+   * 
+   * @param messages - Array of chat messages with role and content
+   * @returns AsyncIterable of chunks with type and delta
+   */
   const streamChat = useCallback(async function* ({ messages }: { messages: { role: string; content: string }[] }) {
-    if (!config.llm) {
+    if (!config?.llm) {
       throw new Error('LLM provider not configured');
     }
 
     yield* config.llm.streamChat({ messages });
-  }, [config.llm]);
+  }, [config]);
 
   return {
     streamChat,
   };
 }
 
+/**
+ * useVoice - Access text-to-speech functionality
+ * 
+ * Provides functions to convert text to speech using the configured TTS provider.
+ * Includes a speaking state to track when audio is playing. Requires KhaveeProvider
+ * to be configured with a TTS provider.
+ * 
+ * @returns Object containing:
+ *   - speak: Function to convert text to speech
+ *   - speaking: Boolean indicating if currently speaking
+ * 
+ * @throws Error if TTS provider is not configured in KhaveeProvider
+ * 
+ * @example
+ * ```tsx
+ * import { useVoice } from '@khaveeai/react';
+ * 
+ * function VoiceControls() {
+ *   const { speak, speaking } = useVoice();
+ *   
+ *   const sayHello = async () => {
+ *     await speak({ text: 'Hello, world!' });
+ *   };
+ *   
+ *   return (
+ *     <div>
+ *       <button onClick={sayHello} disabled={speaking}>
+ *         {speaking ? 'Speaking...' : 'Say Hello'}
+ *       </button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ * 
+ * @example
+ * // With voice selection
+ * ```tsx
+ * function VoiceSelector() {
+ *   const { speak, speaking } = useVoice();
+ *   const [voice, setVoice] = useState('default');
+ *   
+ *   const handleSpeak = async (text: string) => {
+ *     await speak({ text, voice });
+ *   };
+ *   
+ *   return (
+ *     <div>
+ *       <select onChange={(e) => setVoice(e.target.value)}>
+ *         <option value="default">Default</option>
+ *         <option value="female">Female</option>
+ *         <option value="male">Male</option>
+ *       </select>
+ *       <button 
+ *         onClick={() => handleSpeak('Test message')}
+ *         disabled={speaking}
+ *       >
+ *         Speak
+ *       </button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ * 
+ * @example
+ * // Combined with VRM expressions
+ * ```tsx
+ * function TalkingAvatar() {
+ *   const { speak, speaking } = useVoice();
+ *   const { setExpression } = useVRMExpressions();
+ *   
+ *   const talkWithExpression = async (text: string) => {
+ *     setExpression('happy', 1);
+ *     await speak({ text });
+ *     setExpression('happy', 0);
+ *   };
+ *   
+ *   return (
+ *     <button 
+ *       onClick={() => talkWithExpression('I am happy!')}
+ *       disabled={speaking}
+ *     >
+ *       Talk
+ *     </button>
+ *   );
+ * }
+ * ```
+ */
 export function useVoice() {
   const { config } = useKhavee();
   const [speaking, setSpeaking] = useState(false);
 
+  /**
+   * speak - Convert text to speech
+   * 
+   * @param text - The text to speak
+   * @param voice - Optional voice identifier
+   * @returns Promise that resolves when speech is complete
+   */
   const speak = useCallback(async ({ text, voice }: { text: string; voice?: string }) => {
-    if (!config.tts) {
+    if (!config?.tts) {
       throw new Error('TTS provider not configured');
     }
 
@@ -40,101 +190,10 @@ export function useVoice() {
     } finally {
       setSpeaking(false);
     }
-  }, [config.tts]);
+  }, [config]);
 
   return {
     speak,
     speaking,
-  };
-}
-
-export function useAnimation() {
-  const { config } = useKhavee();
-  const [currentAnimation, setCurrentAnimation] = useState<string | null>("idle");
-  const [visemes, setVisemes] = useState<Record<string, number>>({});
-  const [expressions, setExpressions] = useState<Record<string, number>>({});
-  const [animationExpressions, setAnimationExpressions] = useState<Record<string, number>>({});
-
-  // Animation to expression presets (like your working example)
-  const animationExpressionPresets: Record<string, Record<string, number>> = {
-    wave_small: { happy: 0.3 },
-    smile_soft: { happy: 0.6 },
-    laugh: { happy: 0.9 },
-    sad: { sad: 0.8, happy: 0 },
-    surprised: { happy: 0.2 },
-    thinking: { happy: 0 },
-    nod_yes: { happy: 0.4 },
-    shake_no: { happy: 0 },
-    swing_dance: { happy: 0.8 },
-    thriller_dance: { happy: 0.3 },
-    punch: { angry: 0.7, happy: 0 },
-    idle: { happy: 0.1 }
-  };
-
-  const animate = useCallback((animationName: string) => {
-    console.log(`[Animation] Triggering: ${animationName}`);
-    
-    // Check if animation exists in registry
-    if (config.animationRegistry && config.animationRegistry[animationName]) {
-      setCurrentAnimation(animationName);
-      mockAnimationState.currentAnimation = animationName;
-      
-      // Apply emotion expressions immediately
-      const emotionPreset = animationExpressionPresets[animationName] || {};
-      setAnimationExpressions(emotionPreset);
-      console.log(`[Animation] Applied emotions:`, emotionPreset);
-      
-      // Auto-stop after animation duration and return to idle
-      const animInfo = config.animationRegistry[animationName];
-      const duration = animInfo.duration || 3000;
-      
-      setTimeout(() => {
-        setCurrentAnimation("idle"); // Return to idle instead of null
-        mockAnimationState.currentAnimation = "idle";
-        setAnimationExpressions(animationExpressionPresets["idle"] || {});
-      }, duration);
-    } else {
-      console.warn(`[Animation] Animation '${animationName}' not found in registry`);
-    }
-  }, [config.animationRegistry]);
-
-  const pulse = useCallback((expression: string, intensity: number = 0.8, duration: number = 1000) => {
-    console.log(`[Animation] Pulsing expression: ${expression} (${intensity})`);
-    
-    // Animate expression up then down
-    setExpressions(prev => ({ ...prev, [expression]: intensity }));
-    mockAnimationState.expressions[expression] = intensity;
-    
-    setTimeout(() => {
-      setExpressions(prev => ({ ...prev, [expression]: 0 }));
-      mockAnimationState.expressions[expression] = 0;
-    }, duration);
-  }, []);
-
-  const setViseme = useCallback((viseme: string, value: number) => {
-    setVisemes(prev => ({ ...prev, [viseme]: value }));
-    mockAnimationState.visemes[viseme] = value;
-  }, []);
-
-  const setExpression = useCallback((expression: string, value: number) => {
-    setExpressions(prev => ({ ...prev, [expression]: value }));
-    mockAnimationState.expressions[expression] = value;
-  }, []);
-
-  // Initialize with idle expressions
-  useEffect(() => {
-    setAnimationExpressions({ happy: 0.1 });
-  }, []);
-
-  return {
-    currentAnimation,
-    visemes,
-    expressions,
-    animationExpressions, // Add this for VRMAvatar to use
-    animationRegistry: config.animationRegistry,
-    animate,
-    pulse,
-    setViseme,
-    setExpression,
   };
 }
