@@ -2,6 +2,26 @@
   "name": "@khaveeai/providers-mock",
   "version": "0.1.0",
   "description": "Mock providers for KhaveeAI development",
+  "keywords": ["mock", "provider", "development", "testing"],
+  "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SolveServeSolution/khaveeai-sdk.git",
+    "directory": "packages/providers/mock"
+  },
+  "bugs": {
+    "url": "https://github.com/SolveServeSolution/khaveeai-sdk/issues"
+  },
+  "author": "KhaveeAI <support@khaveeai.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/**/*",
+    "package.json",
+    "README.md"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",

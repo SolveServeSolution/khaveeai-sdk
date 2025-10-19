@@ -1,7 +1,21 @@
 {
-  "name": "vrm-workspace",
+  "name": "@khaveeai/sdk",
   "version": "0.1.0",
-  "private": true,
+  "description": "KhaveeAI VRM Avatar SDK - A comprehensive toolkit for creating interactive AI-powered avatars",
+  "keywords": ["vrm", "avatar", "ai", "3d", "animation", "realtime", "sdk"],
+  "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SolveServeSolution/khaveeai-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SolveServeSolution/khaveeai-sdk/issues"
+  },
+  "author": "KhaveeAI <support@khaveeai.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "workspaces": [
     "packages/core",
     "packages/react", 
@@ -13,7 +27,13 @@
     "start": "next start",
     "lint": "eslint",
     "build:packages": "pnpm -r build",
-    "dev:packages": "pnpm -r dev"
+    "dev:packages": "pnpm -r dev",
+    "clean": "pnpm -r clean",
+    "prepublishOnly": "pnpm run clean && pnpm run build:packages",
+    "publish:all": "pnpm run prepublishOnly && pnpm -r publish --access public",
+    "version:patch": "pnpm -r exec npm version patch",
+    "version:minor": "pnpm -r exec npm version minor",
+    "version:major": "pnpm -r exec npm version major"
   },
   "dependencies": {
     "@khaveeai/core": "workspace:*",

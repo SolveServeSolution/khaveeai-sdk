@@ -2,6 +2,39 @@
   "name": "@khaveeai/providers-openai-realtime",
   "version": "0.1.0",
   "description": "OpenAI Realtime API provider for Khavee AI SDK",
+  "keywords": [
+    "openai",
+    "realtime",
+    "provider",
+    "ai",
+    "streaming"
+  ],
+  "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SolveServeSolution/khaveeai-sdk.git",
+    "directory": "packages/providers/openai-realtime"
+  },
+  "bugs": {
+    "url": "https://github.com/SolveServeSolution/khaveeai-sdk/issues"
+  },
+  "author": "KhaveeAI <support@khaveeai.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/**/*",
+    "package.json",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,7 +42,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@khaveeai/core": "workspace:*"
+    "@khaveeai/core": "workspace:*",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
