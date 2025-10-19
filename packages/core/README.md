@@ -8,15 +8,6 @@ Core VRM avatar functionality and types for the KhaveeAI SDK.
 npm install @khaveeai/core
 ```
 
-## Basic Usage
-
-```typescript
-import { VRMManager } from '@khaveeai/core';
-
-const manager = new VRMManager();
-// Core functionality
-```
-
 ## API Reference
 
 This package provides the core types and utilities used by all other KhaveeAI packages.
