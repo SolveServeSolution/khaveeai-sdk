@@ -13,6 +13,14 @@ interface VRMAvatarProps {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   animations?: AnimationConfig; // User's animation configuration (just URLs!)
+  enableLipSync?: boolean; // Enable lip sync from realtime provider
+  mouthState?: {
+    aa: number;
+    i: number;
+    u: number;
+    e: number;
+    o: number;
+  }; // Mouth state from realtime lip sync
   [key: string]: any; // Other props
 }
 
@@ -155,6 +163,8 @@ export function VRMAvatar({
   rotation = [0, Math.PI, 0],
   scale = [1, 1, 1],
   animations,
+  enableLipSync = false,
+  mouthState,
   ...props 
 }: VRMAvatarProps) {
   const { setVrm, expressions, currentAnimation } = useKhavee();
@@ -295,6 +305,19 @@ export function VRMAvatar({
         lerpExpression(name, value, delta * 8); // Smooth transition
       }
     });
+
+    // Apply lip sync from realtime provider if enabled
+    if (enableLipSync && mouthState) {
+      // Map phoneme values to VRM viseme expressions
+      // VRM standard visemes: aa, ih, ou, ee, oh, bmp, ff, th, dd, kk, ch, ss, nn, rr
+      lerpExpression('aa', mouthState.aa, delta * 15); // Fast lip sync
+      lerpExpression('ih', mouthState.i, delta * 15);  // i -> ih
+      lerpExpression('ou', mouthState.u, delta * 15);  // u -> ou  
+      lerpExpression('ee', mouthState.e, delta * 15);  // e -> ee
+      lerpExpression('oh', mouthState.o, delta * 15);  // o -> oh
+      
+      console.log('Applying lip sync:', mouthState);
+    }
 
     currentVrm.update(delta);
   });

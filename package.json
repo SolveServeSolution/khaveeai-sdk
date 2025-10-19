@@ -19,6 +19,7 @@
     "@khaveeai/core": "workspace:*",
     "@khaveeai/react": "workspace:*",
     "@khaveeai/providers-mock": "workspace:*",
+    "@khaveeai/providers-openai-realtime": "workspace:*",
     "@pixiv/three-vrm": "^3.4.2",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",

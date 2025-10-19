@@ -1,6 +1,6 @@
 "use client";
-import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
-import { KhaveeConfig } from '@khaveeai/core';
+import React, { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
+import { KhaveeConfig, RealtimeProvider } from '@khaveeai/core';
 import { VRM } from '@pixiv/three-vrm';
 
 interface KhaveeContextType {
@@ -18,6 +18,8 @@ interface KhaveeContextType {
   animate: (animationName: string) => void;
   stopAnimation: () => void;
   availableAnimations: string[];
+  // Realtime provider
+  realtimeProvider: RealtimeProvider | null;
 }
 
 const KhaveeContext = createContext<KhaveeContextType | null>(null);
@@ -84,6 +86,33 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
   const [expressions, setExpressions] = useState<Record<string, number>>({});
   const [currentAnimation, setCurrentAnimation] = useState<string | null>("idle");
   const [availableAnimations, setAvailableAnimations] = useState<string[]>([]);
+  
+  // Realtime provider state
+  const [realtimeProvider, setRealtimeProvider] = useState<RealtimeProvider | null>(
+    config?.realtime || null
+  );
+
+  // Auto-connect realtime on mount if provided
+  useEffect(() => {
+    if (realtimeProvider) {
+      // Auto-connect on mount
+      realtimeProvider.connect().catch(error => {
+        console.error('Failed to connect realtime provider:', error);
+      });
+      
+      return () => {
+        // Auto-disconnect on unmount
+        realtimeProvider.disconnect();
+      };
+    }
+  }, [realtimeProvider]);
+
+  // Update realtime provider when config changes
+  useEffect(() => {
+    if (config?.realtime !== realtimeProvider) {
+      setRealtimeProvider(config?.realtime || null);
+    }
+  }, [config?.realtime, realtimeProvider]);
 
   /**
    * setExpression - Set a single VRM facial expression with smooth transition
@@ -236,6 +265,7 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
       animate,
       stopAnimation,
       availableAnimations,
+      realtimeProvider,
     }}>
       {children}
     </KhaveeContext.Provider>
