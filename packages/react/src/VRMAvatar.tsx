@@ -3,7 +3,7 @@ import { useGLTF, useAnimations, useFBX } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { lerp } from "three/src/math/MathUtils.js";
 import * as THREE from "three";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { remapMixamoAnimationToVrm } from "./utils/remapMixamoAnimationToVrm";
 import { useKhavee } from "./KhaveeProvider";
 
@@ -13,14 +13,15 @@ interface VRMAvatarProps {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   animations?: AnimationConfig; // User's animation configuration (just URLs!)
-  enableLipSync?: boolean; // Enable lip sync from realtime provider
+  enableLipSync?: boolean; // Enable automatic lip sync with audio
   mouthState?: {
     aa: number;
     i: number;
     u: number;
     e: number;
     o: number;
-  }; // Mouth state from realtime lip sync
+  }; // Manual mouth state override
+  audioElement?: HTMLAudioElement; // Audio element to analyze for lip sync
   [key: string]: any; // Other props
 }
 
@@ -165,6 +166,7 @@ export function VRMAvatar({
   animations,
   enableLipSync = false,
   mouthState,
+  audioElement,
   ...props 
 }: VRMAvatarProps) {
   const { setVrm, expressions, currentAnimation } = useKhavee();
@@ -296,6 +298,149 @@ export function VRMAvatar({
     }
   };
 
+  // Audio analysis setup for automatic lip sync
+  const audioAnalysisRef = useRef<{
+    analyser: AnalyserNode | null;
+    dataArray: Uint8Array<ArrayBuffer> | null;
+    audioContext: AudioContext | null;
+    isAnalyzing: boolean;
+    lastMouthState: { aa: number; ih: number; ee: number; oh: number; ou: number };
+  }>({
+    analyser: null,
+    dataArray: null,
+    audioContext: null,
+    isAnalyzing: false,
+    lastMouthState: { aa: 0, ih: 0, ee: 0, oh: 0, ou: 0 }
+  });
+
+  // Initialize audio analysis when enableLipSync is true
+  useEffect(() => {
+    if (!enableLipSync) {
+      // Clean up audio analysis
+      if (audioAnalysisRef.current.audioContext) {
+        audioAnalysisRef.current.audioContext.close();
+        audioAnalysisRef.current = {
+          analyser: null,
+          dataArray: null,
+          audioContext: null,
+          isAnalyzing: false,
+          lastMouthState: { aa: 0, ih: 0, ee: 0, oh: 0, ou: 0 }
+        };
+      }
+      return;
+    }
+
+    const initAudioAnalysis = async () => {
+      try {
+        const audioContext = new AudioContext();
+        let source: AudioNode;
+
+        if (audioElement) {
+          // Analyze provided audio element (like TTS audio)
+          source = audioContext.createMediaElementSource(audioElement);
+        } else {
+          // Analyze microphone input
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          source = audioContext.createMediaStreamSource(stream);
+        }
+
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 512; // Higher resolution for better lip sync
+        analyser.smoothingTimeConstant = 0.3;
+        
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray: Uint8Array<ArrayBuffer> = new Uint8Array(bufferLength);
+        
+        source.connect(analyser);
+        
+        // If analyzing audio element, also connect to speakers
+        if (audioElement) {
+          source.connect(audioContext.destination);
+        }
+        
+        audioAnalysisRef.current = {
+          analyser,
+          dataArray,
+          audioContext,
+          isAnalyzing: true,
+          lastMouthState: { aa: 0, ih: 0, ee: 0, oh: 0, ou: 0 }
+        };
+        
+        console.log('Audio analysis initialized for lip sync:', audioElement ? 'Audio Element' : 'Microphone');
+      } catch (error) {
+        console.warn('Could not initialize audio analysis:', error);
+      }
+    };
+
+    initAudioAnalysis();
+
+    return () => {
+      if (audioAnalysisRef.current.audioContext) {
+        audioAnalysisRef.current.audioContext.close();
+      }
+      audioAnalysisRef.current.isAnalyzing = false;
+    };
+  }, [enableLipSync, audioElement]);
+
+  // Advanced audio analysis for realistic mouth movements
+  const analyzeAudioForMouth = () => {
+    const { analyser, dataArray, isAnalyzing } = audioAnalysisRef.current;
+    
+    if (!isAnalyzing || !analyser || !dataArray) {
+      return { aa: 0, ih: 0, ee: 0, oh: 0, ou: 0 };
+    }
+
+    analyser.getByteFrequencyData(dataArray);
+    
+    // Calculate overall volume (0-1)
+    const volume = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255;
+    
+    // Frequency analysis for phoneme approximation
+    const lowFreq = dataArray.slice(1, 8).reduce((sum, val) => sum + val, 0) / 7; // 86-688 Hz
+    const midFreq = dataArray.slice(8, 24).reduce((sum, val) => sum + val, 0) / 16; // 688-2064 Hz  
+    const highFreq = dataArray.slice(24, 48).reduce((sum, val) => sum + val, 0) / 24; // 2064-4128 Hz
+    
+    // Normalize frequency values
+    const lowNorm = lowFreq / 255;
+    const midNorm = midFreq / 255;
+    const highNorm = highFreq / 255;
+    
+    // Calculate mouth shapes based on frequency analysis (simplified phoneme detection)
+    const mouthShapes = {
+      // 'aa' - open mouth sound (low frequencies dominant)
+      aa: Math.min(volume * lowNorm * 2, 1) * 0.8,
+      
+      // 'ih' - smile/front vowel (mid-high frequencies) 
+      ih: Math.min(volume * (midNorm + highNorm) * 1.5, 1) * 0.6,
+      
+      // 'ee' - wide smile (high frequencies dominant)
+      ee: Math.min(volume * highNorm * 2, 1) * 0.7,
+      
+      // 'oh' - rounded mouth (mid frequencies)
+      oh: Math.min(volume * midNorm * 1.8, 1) * 0.6,
+      
+      // 'ou' - pursed lips (low-mid frequencies)
+      ou: Math.min(volume * (lowNorm + midNorm) * 1.2, 1) * 0.5
+    };
+
+    // Smooth transitions to avoid jittery movement
+    const { lastMouthState } = audioAnalysisRef.current;
+    const smoothFactor = 0.7;
+    
+    const smoothedShapes = {
+      aa: lerp(lastMouthState.aa, mouthShapes.aa, smoothFactor),
+      ih: lerp(lastMouthState.ih, mouthShapes.ih, smoothFactor),
+      ee: lerp(lastMouthState.ee, mouthShapes.ee, smoothFactor),
+      oh: lerp(lastMouthState.oh, mouthShapes.oh, smoothFactor),
+      ou: lerp(lastMouthState.ou, mouthShapes.ou, smoothFactor)
+    };
+    
+    // Update last state
+    audioAnalysisRef.current.lastMouthState = smoothedShapes;
+    
+    return smoothedShapes;
+  };
+
   useFrame((_, delta) => {
     if (!currentVrm?.expressionManager) return;
 
@@ -306,17 +451,39 @@ export function VRMAvatar({
       }
     });
 
-    // Apply lip sync from realtime provider if enabled
-    if (enableLipSync && mouthState) {
-      // Map phoneme values to VRM viseme expressions
-      // VRM standard visemes: aa, ih, ou, ee, oh, bmp, ff, th, dd, kk, ch, ss, nn, rr
-      lerpExpression('aa', mouthState.aa, delta * 15); // Fast lip sync
-      lerpExpression('ih', mouthState.i, delta * 15);  // i -> ih
-      lerpExpression('ou', mouthState.u, delta * 15);  // u -> ou  
-      lerpExpression('ee', mouthState.e, delta * 15);  // e -> ee
-      lerpExpression('oh', mouthState.o, delta * 15);  // o -> oh
+    // Apply lip sync - prioritize manual mouthState, then audio analysis
+    if (enableLipSync) {
+      let mouthValues: { aa: number; ih: number; ee: number; oh: number; ou: number };
       
-      console.log('Applying lip sync:', mouthState);
+      if (mouthState) {
+        // Use manual mouth state (from realtime provider)
+        mouthValues = {
+          aa: mouthState.aa,
+          ih: mouthState.i,
+          ee: mouthState.e, 
+          oh: mouthState.o,
+          ou: mouthState.u
+        };
+      } else {
+        // Use automatic audio analysis
+        mouthValues = analyzeAudioForMouth();
+      }
+      
+      // Apply mouth expressions with faster interpolation for natural lip sync
+      [
+        { name: 'aa', value: mouthValues.aa },
+        { name: 'ih', value: mouthValues.ih },
+        { name: 'ee', value: mouthValues.ee },
+        { name: 'oh', value: mouthValues.oh },
+        { name: 'ou', value: mouthValues.ou }
+      ].forEach(item => {
+        lerpExpression(item.name, item.value, delta * 12); // Fast lip sync like reference app
+      });
+      
+      // Debug log if mouth is moving
+      if (Object.values(mouthValues).some(v => v > 0.1)) {
+        console.log('Lip sync active:', mouthValues);
+      }
     }
 
     currentVrm.update(delta);

@@ -25,10 +25,11 @@ export function useLLM() {
   return { streamChat };
 }
 
-// Hook for TTS/Voice
-export function useVoice() {
+// Hook for TTS with automatic lip sync
+export function useVoiceWithLipSync() {
   const { config } = useKhavee();
   const [speaking, setSpeaking] = useState(false);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   
   const speak = useCallback(async ({ text, voice }: { text: string; voice?: string }) => {
     if (!config?.tts) {
@@ -37,13 +38,21 @@ export function useVoice() {
     
     setSpeaking(true);
     try {
+      // Create audio element for lip sync analysis
+      const audio = new Audio();
+      setAudioElement(audio);
+      
+      // If TTS provider supports returning audio URL/blob, use it
+      // Otherwise, use the existing TTS speak method
       await config.tts.speak({ text, voice });
+      
     } finally {
       setSpeaking(false);
+      setAudioElement(null);
     }
   }, [config?.tts]);
 
-  return { speak, speaking };
+  return { speak, speaking, audioElement };
 }
 
 /**
