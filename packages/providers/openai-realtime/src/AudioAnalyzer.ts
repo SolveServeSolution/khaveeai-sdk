@@ -124,16 +124,16 @@ export class AudioAnalyzer {
       phoneme = 'aa'; // あ
       intensity = 0.8;
     } else if (f1 < 450 && f2 > 1900) {
-      phoneme = 'i';  // い
+      phoneme = 'ih';  // い
       intensity = 0.7;
     } else if (f1 < 450 && f2 < 1100) {
-      phoneme = 'u';  // う
+      phoneme = 'ou';  // う
       intensity = 0.6;
     } else if (f1 > 350 && f1 < 650 && f2 > 1700) {
-      phoneme = 'e';  // え
+      phoneme = 'ee';  // え
       intensity = 0.7;
     } else if (f1 > 350 && f1 < 650 && f2 < 1300) {
-      phoneme = 'o';  // お
+      phoneme = 'oh';  // お
       intensity = 0.6;
     }
     
@@ -149,7 +149,7 @@ export class AudioAnalyzer {
    * Convert phoneme to VRM mouth state
    */
   private phonemeToMouthState(phoneme: PhonemeData): MouthState {
-    const state: MouthState = { aa: 0, i: 0, u: 0, e: 0, o: 0 };
+    const state: MouthState = { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 };
     
     if (phoneme.phoneme !== 'sil') {
       state[phoneme.phoneme] = phoneme.intensity;

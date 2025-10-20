@@ -3,7 +3,7 @@ import { CameraControls, Environment, Gltf } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useControls } from "leva";
 import { useRef } from "react";
-import VRMAvatar from "./VRMAvatar";
+import VRMAvatar from "./VRMAvatarRef";
 
 export const Experience = () => {
   const controls = useRef(null);

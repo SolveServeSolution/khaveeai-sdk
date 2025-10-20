@@ -1,9 +1,9 @@
 "use client";
 
-import { KhaveeProvider } from "@khaveeai/react";
+import {  KhaveeProvider } from "@khaveeai/react";
 import Link from "next/link";
-import { ChatInterface } from "./components/ChatInterface";
 import { VRMScene } from "./components/VRMSceneFixed";
+import ExpressionControls from "./components/ExpressionControls";
 
 // Main example page
 export default function KhaveeExamplePage() {
@@ -40,8 +40,9 @@ export default function KhaveeExamplePage() {
             </div>
 
             {/* Controls Panel */}
-            <div className="space-y-4">
-              {/* <ChatInterface /> */}
+            <div className="space-y-4">{/* <ChatInterface /> */}
+
+              <ExpressionControls/>
             </div>
           </div>
         </div>

@@ -12,17 +12,17 @@ export interface AudioData {
  */
 export interface MouthState {
   aa: number;  // Open mouth (あ)
-  i: number;   // Smile mouth (い)
-  u: number;   // Pucker mouth (う)
-  e: number;   // Half open (え)
-  o: number;   // Round mouth (お)
+  ih: number;  // Smile mouth (い)
+  ou: number;  // Pucker mouth (う)
+  ee: number;  // Half open (え)
+  oh: number;  // Round mouth (お)
 }
 
 /**
  * Phoneme data for lip sync (Japanese vowels)
  */
 export interface PhonemeData {
-  phoneme: 'aa' | 'i' | 'u' | 'e' | 'o' | 'sil';
+  phoneme: 'aa' | 'ih' | 'ou' | 'ee' | 'oh' | 'sil';
   intensity: number; // 0-1
   timestamp: number;
   duration?: number;

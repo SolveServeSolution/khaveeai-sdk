@@ -3,8 +3,9 @@ import { useAnimations, useFBX, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
 import { lerp } from "three/src/math/MathUtils.js";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { remapMixamoAnimationToVrm } from "../utils/remapMixamoAnimationToVrm";
+import * as THREE from "three";
 
 interface VRMAvatarProps {
   avatar: string; // URL or path to the VRM model
@@ -12,12 +13,16 @@ interface VRMAvatarProps {
 }
 
 export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const currentActionRef = useRef<THREE.AnimationAction | null>(null);
+  const expressionTargetsRef = useRef<Record<string, number>>({});
+
   const { scene, userData } = useGLTF(
     `models/${avatar}`,
     undefined,
     undefined,
     (loader) => {
-      loader.register((parser) => {
+      loader.register((parser: any) => {
         return new VRMLoaderPlugin(parser);
       });
     }
@@ -58,6 +63,27 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
     [animationClipA, animationClipB, animationClipC, animationClipD],
     currentVrm.scene
   );
+
+  // Initialize animation mixer and maintain animation state
+  useEffect(() => {
+    if (currentVrm?.scene) {
+      mixerRef.current = new THREE.AnimationMixer(currentVrm.scene);
+      
+      // Add clips to mixer
+      [animationClipA, animationClipB, animationClipC, animationClipD].forEach(clip => {
+        if (clip) {
+          mixerRef.current?.clipAction(clip);
+        }
+      });
+    }
+    
+    return () => {
+      if (mixerRef.current) {
+        mixerRef.current.stopAllAction();
+        mixerRef.current = null;
+      }
+    };
+  }, [currentVrm, animationClipA, animationClipB, animationClipC, animationClipD]);
 
   useEffect(() => {
     const vrm = userData.vrm;
@@ -108,64 +134,84 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
     },
   });
 
+  // Handle animation switching with proper crossfading
   useEffect(() => {
-    if (animation === "None") {
+    if (!mixerRef.current || animation === "None") {
+      // Stop current animation
+      if (currentActionRef.current) {
+        currentActionRef.current.fadeOut(0.3);
+        currentActionRef.current = null;
+      }
       return;
     }
-    actions[animation]?.play();
-    return () => {
-      actions[animation]?.stop();
-    };
-  }, [actions, animation]);
 
+    const targetClip = [animationClipA, animationClipB, animationClipC, animationClipD]
+      .find(clip => clip?.name === animation);
+    
+    if (targetClip && mixerRef.current) {
+      const newAction = mixerRef.current.clipAction(targetClip);
+      
+      // Crossfade from current to new animation
+      if (currentActionRef.current && currentActionRef.current !== newAction) {
+        // Fade out current animation
+        currentActionRef.current.fadeOut(0.3);
+        // Fade in new animation
+        newAction.reset().fadeIn(0.3).play();
+      } else if (!currentActionRef.current) {
+        // Start new animation without fade
+        newAction.reset().play();
+      }
+      
+      currentActionRef.current = newAction;
+    }
+  }, [animation, animationClipA, animationClipB, animationClipC, animationClipD]);
+
+  // Smooth expression interpolation function
   const lerpExpression = (name: string, value: number, lerpFactor: number) => {
-    userData.vrm.expressionManager.setValue(
-      name,
-      lerp(userData.vrm.expressionManager.getValue(name), value, lerpFactor)
-    );
+    if (!userData.vrm?.expressionManager) return;
+    
+    const currentValue = userData.vrm.expressionManager.getValue(name) || 0;
+    const targetValue = lerp(currentValue, value, lerpFactor);
+    
+    // Store target for reference
+    expressionTargetsRef.current[name] = value;
+    
+    // Apply expression without disrupting animations
+    userData.vrm.expressionManager.setValue(name, targetValue);
   };
 
   useFrame((_, delta) => {
     if (!userData.vrm) {
       return;
     }
+
+    // Update animation mixer first (if exists)
+    if (mixerRef.current) {
+      mixerRef.current.update(delta);
+    }
+
+    // Update expressions with smooth interpolation
+    // These expressions don't interfere with bone animations
     userData.vrm.expressionManager.setValue("angry", angry);
     userData.vrm.expressionManager.setValue("sad", sad);
     userData.vrm.expressionManager.setValue("happy", happy);
 
+    // Smooth lip-sync and blink expressions with higher lerp rate for responsiveness
+    const expressionLerpRate = 15; // Increased for better lip-sync responsiveness
+    
     [
-      {
-        name: "aa",
-        value: aa,
-      },
-      {
-        name: "ih",
-        value: ih,
-      },
-      {
-        name: "ee",
-        value: ee,
-      },
-      {
-        name: "oh",
-        value: oh,
-      },
-      {
-        name: "ou",
-        value: ou,
-      },
-      {
-        name: "blinkLeft",
-        value: blinkLeft,
-      },
-      {
-        name: "blinkRight",
-        value: blinkRight,
-      },
+      { name: "aa", value: aa },
+      { name: "ih", value: ih },
+      { name: "ee", value: ee },
+      { name: "oh", value: oh },
+      { name: "ou", value: ou },
+      { name: "blinkLeft", value: blinkLeft },
+      { name: "blinkRight", value: blinkRight },
     ].forEach((item) => {
-      lerpExpression(item.name, item.value, delta * 12);
+      lerpExpression(item.name, item.value, delta * expressionLerpRate);
     });
 
+    // Update VRM after all changes (expressions + animations)
     userData.vrm.update(delta);
   });
 
