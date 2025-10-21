@@ -184,6 +184,8 @@ export function useAudioLipSync() {
     null
   );
 
+  const { setMultipleExpressions } = useVRMExpressions();
+
   /**
    * Analyze audio file and sync lip movements
    */
@@ -216,8 +218,8 @@ export function useAudioLipSync() {
 
         // Start MFCC-based analysis with higher sensitivity
         const analyzer = new AudioFileAnalyzer(analyser, audioContext, {
-          sensitivity: options?.sensitivity || 0.9, // Increased default sensitivity
-          intensityMultiplier: options?.intensityMultiplier || 2.5, // New intensity boost
+          sensitivity: options?.sensitivity || 0, // Increased default sensitivity
+          intensityMultiplier: options?.intensityMultiplier || 4.0, // New intensity boost
           minIntensity: options?.minIntensity || 0.3, // Minimum intensity threshold
           audioSource: source, // Pass the audio source for Meyda
           onPhonemeDetected: (phoneme: PhonemeData) => {
@@ -239,8 +241,7 @@ export function useAudioLipSync() {
               ee: newMouthState.ee,
               oh: newMouthState.oh,
             };
-
-            console.log("Setting VRM expressions:", expressionUpdate);
+            setMultipleExpressions(expressionUpdate);
           },
         });
 
@@ -254,6 +255,7 @@ export function useAudioLipSync() {
           setIsAnalyzing(false);
           setCurrentPhoneme(null);
           setMouthState({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
+          setMultipleExpressions({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
         };
       } catch (error) {
         console.error("Audio lip-sync analysis failed:", error);
