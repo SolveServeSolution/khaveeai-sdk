@@ -137,7 +137,6 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
    * ```
    */
   const setExpression = useCallback((name: string, value: number) => {
-    console.log(`[VRM Expression] Setting ${name} to ${value}`);
     const clampedValue = Math.max(0, Math.min(1, value));
     setExpressions(prev => ({ ...prev, [name]: clampedValue }));
   }, []);
@@ -159,7 +158,6 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
    * ```
    */
   const resetExpressions = useCallback(() => {
-    console.log('[VRM Expression] Resetting all expressions');
     setExpressions(prev => {
       const resetExpressions = Object.fromEntries(
         Object.keys(prev).map(name => [name, 0])
@@ -198,7 +196,6 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
    * ```
    */
   const setMultipleExpressions = useCallback((expressionMap: Record<string, number>) => {
-    console.log('[VRM Expression] Setting multiple expressions:', expressionMap);
     const clampedExpressions = Object.fromEntries(
       Object.entries(expressionMap).map(([name, value]) => [
         name,
@@ -229,7 +226,6 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
    * ```
    */
   const animate = useCallback((animationName: string) => {
-    console.log(`[VRM Animation] Playing animation: ${animationName}`);
     setCurrentAnimation(animationName);
   }, []);
 
@@ -248,7 +244,6 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
    * ```
    */
   const stopAnimation = useCallback(() => {
-    console.log('[VRM Animation] Stopping animation');
     setCurrentAnimation(null);
   }, []);
 

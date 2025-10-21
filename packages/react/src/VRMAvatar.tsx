@@ -13,16 +13,6 @@ interface VRMAvatarProps {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   animations?: AnimationConfig; // User's animation configuration (just URLs!)
-  enableLipSync?: boolean; // Enable automatic lip sync with audio
-  mouthState?: {
-    aa: number;
-    ih: number;
-    ou: number;
-    ee: number;
-    oh: number;
-  }; // Manual mouth state override
-  audioElement?: HTMLAudioElement; // Audio element to analyze for lip sync
-  [key: string]: any; // Other props
 }
 
 /**
@@ -159,9 +149,6 @@ export function VRMAvatar({
   rotation = [0, Math.PI, 0],
   scale = [1, 1, 1],
   animations,
-  enableLipSync = false,
-  mouthState,
-  audioElement,
   ...props
 }: VRMAvatarProps) {
   const { setVrm, expressions, currentAnimation } = useKhavee();
@@ -231,7 +218,7 @@ export function VRMAvatar({
       if (mixerRef.current) {
         mixerRef.current.stopAllAction();
         mixerRef.current = null;
-        currentActionRef.current = null; // Reset current action ref too
+        currentActionRef.current = null;
       }
     };
   }, [currentVrm]);
@@ -333,28 +320,6 @@ export function VRMAvatar({
         lerpExpression(name, value, delta * 8);
       }
     });
-
-    // Apply lip sync - prioritize manual mouthState, then audio analysis
-    if (enableLipSync) {
-      const mouthValues = {
-        aa: mouthState?.aa || 0,
-        ih: mouthState?.ih || 0,
-        ee: mouthState?.ee || 0,
-        oh: mouthState?.oh || 0,
-        ou: mouthState?.ou || 0,
-      };
-
-      // Apply mouth expressions with faster interpolation for natural lip sync
-      [
-        { name: "aa", value: mouthValues.aa },
-        { name: "ih", value: mouthValues.ih },
-        { name: "ee", value: mouthValues.ee },
-        { name: "oh", value: mouthValues.oh },
-        { name: "ou", value: mouthValues.ou },
-      ].forEach((item) => {
-        lerpExpression(item.name, item.value, delta * 8);
-      });
-    }
 
     // Update VRM after all changes (expressions + animations)
     currentVrm.update(delta);

@@ -22,6 +22,7 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
     undefined,
     undefined,
     (loader) => {
+      // @ts-ignore - VRM loader type compatibility issue
       loader.register((parser: any) => {
         return new VRMLoaderPlugin(parser);
       });
@@ -68,22 +69,30 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
   useEffect(() => {
     if (currentVrm?.scene) {
       mixerRef.current = new THREE.AnimationMixer(currentVrm.scene);
-      
+
       // Add clips to mixer
-      [animationClipA, animationClipB, animationClipC, animationClipD].forEach(clip => {
-        if (clip) {
-          mixerRef.current?.clipAction(clip);
+      [animationClipA, animationClipB, animationClipC, animationClipD].forEach(
+        (clip) => {
+          if (clip) {
+            mixerRef.current?.clipAction(clip);
+          }
         }
-      });
+      );
     }
-    
+
     return () => {
       if (mixerRef.current) {
         mixerRef.current.stopAllAction();
         mixerRef.current = null;
       }
     };
-  }, [currentVrm, animationClipA, animationClipB, animationClipC, animationClipD]);
+  }, [
+    currentVrm,
+    animationClipA,
+    animationClipB,
+    animationClipC,
+    animationClipD,
+  ]);
 
   useEffect(() => {
     const vrm = userData.vrm;
@@ -94,7 +103,7 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
     VRMUtils.combineMorphs(vrm);
 
     // Disable frustum culling
-    vrm.scene.traverse((obj: { frustumCulled: boolean; }) => {
+    vrm.scene.traverse((obj: { frustumCulled: boolean }) => {
       obj.frustumCulled = false;
     });
   }, [scene]);
@@ -145,12 +154,16 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
       return;
     }
 
-    const targetClip = [animationClipA, animationClipB, animationClipC, animationClipD]
-      .find(clip => clip?.name === animation);
-    
+    const targetClip = [
+      animationClipA,
+      animationClipB,
+      animationClipC,
+      animationClipD,
+    ].find((clip) => clip?.name === animation);
+
     if (targetClip && mixerRef.current) {
       const newAction = mixerRef.current.clipAction(targetClip);
-      
+
       // Crossfade from current to new animation
       if (currentActionRef.current && currentActionRef.current !== newAction) {
         // Fade out current animation
@@ -161,21 +174,27 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
         // Start new animation without fade
         newAction.reset().play();
       }
-      
+
       currentActionRef.current = newAction;
     }
-  }, [animation, animationClipA, animationClipB, animationClipC, animationClipD]);
+  }, [
+    animation,
+    animationClipA,
+    animationClipB,
+    animationClipC,
+    animationClipD,
+  ]);
 
   // Smooth expression interpolation function
   const lerpExpression = (name: string, value: number, lerpFactor: number) => {
     if (!userData.vrm?.expressionManager) return;
-    
+
     const currentValue = userData.vrm.expressionManager.getValue(name) || 0;
     const targetValue = lerp(currentValue, value, lerpFactor);
-    
+
     // Store target for reference
     expressionTargetsRef.current[name] = value;
-    
+
     // Apply expression without disrupting animations
     userData.vrm.expressionManager.setValue(name, targetValue);
   };
@@ -198,7 +217,7 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
 
     // Smooth lip-sync and blink expressions with higher lerp rate for responsiveness
     const expressionLerpRate = 15; // Increased for better lip-sync responsiveness
-    
+
     [
       { name: "aa", value: aa },
       { name: "ih", value: ih },
