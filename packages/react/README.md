@@ -1,7 +1,5 @@
 # @khaveeai/react
 
-# @khaveeai/react
-
 🎭 **React components and hooks for intelligent VRM AI avatars with advanced animation and lip synchronization.**
 
 [![npm version](https://badge.fury.io/js/%40khaveeai%2Freact.svg)](https://badge.fury.io/js/%40khaveeai%2Freact)
