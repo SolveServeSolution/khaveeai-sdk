@@ -3,7 +3,7 @@ import { useVRMExpressions } from "@khaveeai/react";
 export default function Expression() {
   const { setExpression, resetExpressions } = useVRMExpressions();
   return (
-    <div className="bg-white rounded-xl p-10 flex flex-col space-y-2 ">
+    <div className="bg-white h-fit rounded-xl p-10 flex flex-col space-y-2 ">
       <h1>Expressions</h1>
       <button
         className="bg-slate-100 p-2 rounded-lg"

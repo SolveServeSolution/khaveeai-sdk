@@ -75,4 +75,5 @@ export interface RealtimeProvider extends RealtimeEvents {
   chatStatus: ChatStatus;
   conversation: Conversation[];
   currentVolume: number;
+  onAudioData?: (analyser: AnalyserNode, audioContext: AudioContext) => void;
 }

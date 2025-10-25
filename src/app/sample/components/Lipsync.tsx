@@ -1,13 +1,13 @@
 import { useAudioLipSync } from "@khaveeai/react";
 
 export default function LipSync() {
-  const { analyzeLipSync, stopLipSync } = useAudioLipSync();
+  const { analyzeLipSync, stopLipSync, currentPhoneme } = useAudioLipSync();
   return (
-    <div className="bg-white rounded-xl p-10 flex flex-col space-y-2 ">
+    <div className="bg-white rounded-xl h-fit p-10 flex flex-col space-y-2 ">
       <h1>Lipsync</h1>
       <button
         className="bg-slate-100 p-2 rounded-lg"
-        onClick={() => analyzeLipSync("./audio/harvard.wav")}
+        onClick={() => analyzeLipSync("./audio/test.wav")}
       >
         Start
       </button>
@@ -17,6 +17,7 @@ export default function LipSync() {
       >
         Stop
       </button>
+      <p>{currentPhoneme?.phoneme}</p>
     </div>
   );
 }

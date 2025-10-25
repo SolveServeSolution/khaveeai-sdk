@@ -4,7 +4,7 @@ import React from "react";
 export default function Animation() {
   const { animate, stopAnimation } = useVRMAnimations();
   return (
-    <div className="bg-white rounded-xl p-10 flex flex-col space-y-2 ">
+    <div className="bg-white h-fit rounded-xl p-10 flex flex-col space-y-2 ">
       <h1>Animations</h1>
       <button
         className="bg-slate-100 p-2 rounded-lg"
