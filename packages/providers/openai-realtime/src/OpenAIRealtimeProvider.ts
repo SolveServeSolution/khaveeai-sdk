@@ -111,18 +111,19 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Send to OpenAI Realtime API
-      const response = await fetch("/api/realtime/negotiate", {
+      // Send directly to OpenAI Realtime API (no separate API endpoint needed)
+      const response = await fetch(`https://api.openai.com/v1/realtime?model=${this.config.model || 'gpt-4o-realtime-preview-2025-06-03'}&voice=${this.config.voice || 'coral'}`, {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${this.config.apiKey}`,
           "Content-Type": "application/sdp",
-          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: offer.sdp,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to negotiate WebRTC session");
+        const errorText = await response.text();
+        throw new Error(`Failed to negotiate WebRTC session: ${response.status} ${errorText}`);
       }
 
       const answerSdp = await response.text();
