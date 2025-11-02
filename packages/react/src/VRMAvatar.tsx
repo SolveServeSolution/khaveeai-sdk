@@ -1,7 +1,7 @@
 import { VRM, VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { useFBX, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { lerp } from "three/src/math/MathUtils.js";
 import { useKhavee } from "./KhaveeProvider";
@@ -13,6 +13,7 @@ interface VRMAvatarProps {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   animations?: AnimationConfig; // User's animation configuration (just URLs!)
+  enableBlinking?: boolean; // Enable random blinking
 }
 
 /**
@@ -149,12 +150,19 @@ export function VRMAvatar({
   rotation = [0, Math.PI, 0],
   scale = [1, 1, 1],
   animations,
+  enableBlinking = true,
   ...props
 }: VRMAvatarProps) {
   const { setVrm, expressions, currentAnimation } = useKhavee();
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const expressionTargetsRef = useRef<Record<string, number>>({});
+
+  // Blinking system
+  const [blinkState, setBlinkState] = useState(0);
+  const nextBlinkTime = useRef(Date.now() + 2000 + Math.random() * 3000);
+  const isBlinking = useRef(false);
+  const blinkAnimationRef = useRef(0);
 
   const { scene, userData } = useGLTF(src, undefined, undefined, (loader) => {
     // @ts-ignore - VRM loader type compatibility issue
@@ -321,7 +329,47 @@ export function VRMAvatar({
       }
     });
 
-    // Update VRM after all changes (expressions + animations)
+    // Blinking system
+    if (enableBlinking) {
+      const time = Date.now();
+
+      // Check if it's time to blink
+      if (time > nextBlinkTime.current && !isBlinking.current) {
+        isBlinking.current = true;
+        blinkAnimationRef.current = 0;
+        nextBlinkTime.current = time + 100 + Math.random() * 4000; // Next blink in 0-4 seconds
+      }
+
+      // Handle blink animation
+      if (isBlinking.current) {
+        blinkAnimationRef.current += 0.15;
+        if (blinkAnimationRef.current >= 1) {
+          isBlinking.current = false;
+          setBlinkState(0);
+        } else {
+          // Create smooth blink curve using sine
+          const blinkProgress = Math.sin(blinkAnimationRef.current * Math.PI);
+          setBlinkState(blinkProgress);
+        }
+      }
+
+      // Apply blinking to VRM expression system
+      if (currentVrm.expressionManager) {
+        if (
+          currentVrm.expressionManager.blinkExpressionNames.includes(
+            "blinkLeft"
+          ) &&
+          currentVrm.expressionManager.blinkExpressionNames.includes(
+            "blinkRight"
+          )
+        ) {
+          currentVrm.expressionManager.setValue("blinkLeft", blinkState);
+          currentVrm.expressionManager.setValue("blinkRight", blinkState);
+        }
+      }
+    }
+
+    // Update VRM after all changes (expressions + animations + blinking)
     currentVrm.update(delta);
   });
 

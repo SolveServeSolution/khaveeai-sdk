@@ -49,7 +49,7 @@ export default function page() {
           src={currentModel}
           animations={animations}
           position-y={-1.25}
-          enableNaturalMovements={enableNaturalMovements}
+          enableBlinking={true}
         />
         <ambientLight intensity={0.5} />
         <Environment preset="sunset" />
