@@ -11,7 +11,8 @@ export default function Chat() {
     connect,
     disconnect,
     startAutoLipSync,
-    stopAutoLipSync
+    stopAutoLipSync,
+    currentVolume
   } = useRealtime();
   const [input, setInput] = useState("");
   return (
@@ -28,6 +29,7 @@ export default function Chat() {
           )}
         </div>
       </div>
+      <p>{currentVolume}</p>
 
       {!isConnected && (
         <button

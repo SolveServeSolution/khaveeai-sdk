@@ -92,20 +92,7 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
     config?.realtime || null
   );
 
-  // Auto-connect realtime on mount if provided
-  useEffect(() => {
-    if (realtimeProvider) {
-      // Auto-connect on mount
-      realtimeProvider.connect().catch(error => {
-        console.error('Failed to connect realtime provider:', error);
-      });
-      
-      return () => {
-        // Auto-disconnect on unmount
-        realtimeProvider.disconnect();
-      };
-    }
-  }, [realtimeProvider]);
+  // Note: Realtime provider connection is now manual - user must call connect() explicitly
 
   // Update realtime provider when config changes
   useEffect(() => {

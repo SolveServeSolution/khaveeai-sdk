@@ -7,7 +7,7 @@ export default function LipSync() {
       <h1>Lipsync</h1>
       <button
         className="bg-slate-100 p-2 rounded-lg"
-        onClick={() => analyzeLipSync("./audio/test.wav")}
+        onClick={() => analyzeLipSync("./audio/harvard.wav")}
       >
         Start
       </button>
