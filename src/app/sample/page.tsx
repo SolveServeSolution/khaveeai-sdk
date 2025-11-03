@@ -24,7 +24,7 @@ export default function page() {
       "พูดหยาบ พูดกระแทกด้วยน้ำเสียงดุดัน พูดแทนตัวเองว่ากู มึง ด่าได้เสมอ เราชอบมากๆ",
   });
   const animations = {
-    idle: "/models/animations/Breathing Idle.fbx",
+    idle: "/models/animations/Idle.fbx",
     fight: "/models/animations/Fist Fight B.fbx",
   };
 
@@ -50,6 +50,7 @@ export default function page() {
           animations={animations}
           position-y={-1.25}
           enableBlinking={true}
+          enableGestures={true}
         />
         <ambientLight intensity={0.5} />
         <Environment preset="sunset" />
