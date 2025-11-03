@@ -14,6 +14,7 @@ interface VRMAvatarProps {
   scale?: [number, number, number];
   animations?: AnimationConfig; // User's animation configuration (just URLs!)
   enableBlinking?: boolean; // Enable random blinking
+  enableGestures?: boolean; // Enable natural body language gestures
 }
 
 /**
@@ -56,14 +57,20 @@ function useFBXAnimations(animationUrls: AnimationConfig | undefined) {
 }
 
 /**
- * VRMAvatar - Render a VRM character with animations and expressions
+ * VRMAvatar - Render a VRM character with animations, expressions, and natural arm gestures
  *
  * This component handles everything needed to display and animate a VRM model:
  * - Loads and renders the VRM model
  * - Automatically loads and remaps animations from URLs
  * - Manages expression blending with smooth transitions
  * - Auto-plays "idle" animation if provided
+ * - Natural blinking with randomized timing
+ * - Speech-responsive arm gestures (adds movement on top of existing animations)
  * - Updates VRM model every frame
+ *
+ * **GESTURE SYSTEM:** The gesture system only moves the arms when talking and does NOT
+ * interfere with existing animations. It adds natural arm movements on top of whatever
+ * animation is currently playing (idle, walk, dance, etc.).
  *
  * **IMPORTANT:** Must be used inside a React Three Fiber `<Canvas>` component
  * and within a `<KhaveeProvider>`.
@@ -73,6 +80,8 @@ function useFBXAnimations(animationUrls: AnimationConfig | undefined) {
  * @param rotation - Rotation in radians [x, y, z]. Default: [0, Math.PI, 0]
  * @param scale - Scale [x, y, z]. Default: [1, 1, 1]
  * @param animations - Optional animation configuration using URLs to FBX files
+ * @param enableBlinking - Enable natural blinking animations. Default: true
+ * @param enableGestures - Enable speech-responsive arm gestures (doesn't interfere with animations). Default: true
  *
  * @example
  * // Basic usage
@@ -92,7 +101,7 @@ function useFBXAnimations(animationUrls: AnimationConfig | undefined) {
  * ```
  *
  * @example
- * // With animations
+ * // With animations and natural arm gestures
  * ```tsx
  * function Character() {
  *   const animations = {
@@ -107,6 +116,8 @@ function useFBXAnimations(animationUrls: AnimationConfig | undefined) {
  *       animations={animations}
  *       position={[0, -1, 0]}
  *       scale={[1.5, 1.5, 1.5]}
+ *       enableBlinking={true}
+ *       enableGestures={true}  // Adds arm movements on top of animations
  *     />
  *   );
  * }
@@ -136,7 +147,7 @@ function useFBXAnimations(animationUrls: AnimationConfig | undefined) {
  *   return (
  *     <KhaveeProvider>
  *       <Canvas>
- *         <VRMAvatar src="/model.vrm" animations={animations} />
+ *         <VRMAvatar src="/model.vrm" animations={animations} enableGestures={true} />
  *       </Canvas>
  *       <Controls />
  *     </KhaveeProvider>
@@ -151,9 +162,10 @@ export function VRMAvatar({
   scale = [1, 1, 1],
   animations,
   enableBlinking = true,
+  enableGestures = true,
   ...props
 }: VRMAvatarProps) {
-  const { setVrm, expressions, currentAnimation } = useKhavee();
+  const { setVrm, expressions, currentAnimation, realtimeProvider, chatStatus } = useKhavee();
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const expressionTargetsRef = useRef<Record<string, number>>({});
@@ -163,6 +175,12 @@ export function VRMAvatar({
   const nextBlinkTime = useRef(Date.now() + 2000 + Math.random() * 3000);
   const isBlinking = useRef(false);
   const blinkAnimationRef = useRef(0);
+
+  // Enhanced gesture system for natural arm movements only
+  const leftArmTarget = useRef({ rotation: 0, raise: 0, sway: 0, gesture: 0 });
+  const rightArmTarget = useRef({ rotation: 0, raise: 0, sway: 0, gesture: 0 });
+  const currentLeftArm = useRef({ rotation: 0, raise: 0, sway: 0, gesture: 0 });
+  const currentRightArm = useRef({ rotation: 0, raise: 0, sway: 0, gesture: 0 });
 
   const { scene, userData } = useGLTF(src, undefined, undefined, (loader) => {
     // @ts-ignore - VRM loader type compatibility issue
@@ -329,6 +347,133 @@ export function VRMAvatar({
       }
     });
 
+    // Natural gesture system - ONLY arm movements when talking, doesn't interfere with animations
+    if (enableGestures && currentVrm?.humanoid) {
+      const time = Date.now() * 0.001; // Convert to seconds
+
+      // Use chatStatus as the primary indicator of when AI is speaking
+      const isAISpeaking = chatStatus === 'speaking';
+
+      // Also try to get audio intensity for more natural movement
+      let speechIntensity = isAISpeaking ? 0.5 : 0; // Base intensity from chat status
+
+      // Get additional speech activity from audio analyzer if available
+      if (realtimeProvider?.getAudioAnalyser && isAISpeaking) {
+        const audioData = realtimeProvider.getAudioAnalyser();
+        if (audioData) {
+          const analyser = audioData.analyser;
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(dataArray);
+
+          // Calculate average volume from audio data
+          const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+          speechIntensity = Math.max(speechIntensity, average / 255); // Use the higher of the two
+        }
+      }
+
+      // Add some variation even when using chat status
+      if (isAISpeaking) {
+        speechIntensity = speechIntensity * (0.7 + Math.sin(time * 2) * 0.3); // Natural variation
+      }
+
+      const isSpeaking = isAISpeaking;
+
+      if (isSpeaking) {
+        // Generate natural movement targets while speaking
+        const gesturePhase = time * 1.5;
+
+        // Scale movements by actual speech intensity for realistic response
+        const gestureIntensity = speechIntensity;
+
+        // ONLY left arm natural movements - scaled by speech intensity
+        leftArmTarget.current.rotation = (Math.sin(gesturePhase) * 0.2 + Math.sin(gesturePhase * 3) * 0.05) * gestureIntensity;
+        leftArmTarget.current.raise = (Math.sin(gesturePhase * 2) * 0.15 + Math.sin(gesturePhase * 4) * 0.03) * gestureIntensity;
+        leftArmTarget.current.sway = Math.cos(gesturePhase * 1.5) * 0.1 * gestureIntensity;
+        leftArmTarget.current.gesture = (Math.sin(gesturePhase * 5) * 0.2 + 0.1) * gestureIntensity;
+
+        // ONLY right arm natural movements (slightly different timing for variety)
+        const rightGesturePhase = gesturePhase + Math.PI * 0.25;
+        rightArmTarget.current.rotation = (Math.cos(rightGesturePhase) * 0.18 + Math.cos(rightGesturePhase * 3) * 0.04) * gestureIntensity;
+        rightArmTarget.current.raise = (Math.cos(rightGesturePhase * 2) * 0.12 + Math.cos(rightGesturePhase * 4) * 0.02) * gestureIntensity;
+        rightArmTarget.current.sway = Math.sin(rightGesturePhase * 1.5) * 0.08 * gestureIntensity;
+        rightArmTarget.current.gesture = (Math.cos(rightGesturePhase * 5) * 0.15 + 0.08) * gestureIntensity;
+      } else {
+        // Return to neutral positions when not speaking
+        const neutralSpeed = delta * 3; // Faster return to neutral
+
+        // Arms return to neutral
+        leftArmTarget.current.rotation *= (1 - neutralSpeed);
+        leftArmTarget.current.raise *= (1 - neutralSpeed);
+        leftArmTarget.current.sway *= (1 - neutralSpeed);
+        leftArmTarget.current.gesture *= (1 - neutralSpeed);
+
+        rightArmTarget.current.rotation *= (1 - neutralSpeed);
+        rightArmTarget.current.raise *= (1 - neutralSpeed);
+        rightArmTarget.current.sway *= (1 - neutralSpeed);
+        rightArmTarget.current.gesture *= (1 - neutralSpeed);
+      }
+
+      // Smooth interpolation of current positions to targets
+      const lerpSpeed = delta * 8; // Very responsive for speech
+
+      // Update current left arm
+      currentLeftArm.current.rotation += (leftArmTarget.current.rotation - currentLeftArm.current.rotation) * lerpSpeed;
+      currentLeftArm.current.raise += (leftArmTarget.current.raise - currentLeftArm.current.raise) * lerpSpeed;
+      currentLeftArm.current.sway += (leftArmTarget.current.sway - currentLeftArm.current.sway) * lerpSpeed;
+      currentLeftArm.current.gesture += (leftArmTarget.current.gesture - currentLeftArm.current.gesture) * lerpSpeed;
+
+      // Update current right arm
+      currentRightArm.current.rotation += (rightArmTarget.current.rotation - currentRightArm.current.rotation) * lerpSpeed;
+      currentRightArm.current.raise += (rightArmTarget.current.raise - currentRightArm.current.raise) * lerpSpeed;
+      currentRightArm.current.sway += (rightArmTarget.current.sway - currentRightArm.current.sway) * lerpSpeed;
+      currentRightArm.current.gesture += (rightArmTarget.current.gesture - currentRightArm.current.gesture) * lerpSpeed;
+
+      // Apply ONLY arm movements to VRM bones - NO head or spine interference
+      const humanoid = currentVrm.humanoid;
+
+      // Apply ONLY left arm movements
+      const leftUpperArm = humanoid.getNormalizedBoneNode('leftUpperArm');
+      if (leftUpperArm) {
+        // Add gesture rotation on top of existing animation rotation
+        leftUpperArm.rotation.z += currentLeftArm.current.rotation;
+        leftUpperArm.rotation.x += -currentLeftArm.current.raise * 0.5; // Reduced impact on animation
+        leftUpperArm.rotation.y += currentLeftArm.current.sway;
+      }
+
+      const leftLowerArm = humanoid.getNormalizedBoneNode('leftLowerArm');
+      if (leftLowerArm) {
+        // Add gesture to existing animation
+        leftLowerArm.rotation.z += currentLeftArm.current.gesture * 0.3;
+      }
+
+      const leftHand = humanoid.getNormalizedBoneNode('leftHand');
+      if (leftHand) {
+        // Add gesture to existing animation
+        leftHand.rotation.z += currentLeftArm.current.gesture * 0.2;
+      }
+
+      // Apply ONLY right arm movements
+      const rightUpperArm = humanoid.getNormalizedBoneNode('rightUpperArm');
+      if (rightUpperArm) {
+        // Add gesture rotation on top of existing animation rotation
+        rightUpperArm.rotation.z += currentRightArm.current.rotation;
+        rightUpperArm.rotation.x += -currentRightArm.current.raise * 0.5; // Reduced impact on animation
+        rightUpperArm.rotation.y += currentRightArm.current.sway;
+      }
+
+      const rightLowerArm = humanoid.getNormalizedBoneNode('rightLowerArm');
+      if (rightLowerArm) {
+        // Add gesture to existing animation
+        rightLowerArm.rotation.z += currentRightArm.current.gesture * 0.3;
+      }
+
+      const rightHand = humanoid.getNormalizedBoneNode('rightHand');
+      if (rightHand) {
+        // Add gesture to existing animation
+        rightHand.rotation.z += currentRightArm.current.gesture * 0.2;
+      }
+    }
+
     // Blinking system
     if (enableBlinking) {
       const time = Date.now();
@@ -369,7 +514,7 @@ export function VRMAvatar({
       }
     }
 
-    // Update VRM after all changes (expressions + animations + blinking)
+    // Update VRM after all changes (expressions + animations + blinking + gestures)
     currentVrm.update(delta);
   });
 

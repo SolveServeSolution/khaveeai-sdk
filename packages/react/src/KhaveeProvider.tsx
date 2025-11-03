@@ -20,6 +20,7 @@ interface KhaveeContextType {
   availableAnimations: string[];
   // Realtime provider
   realtimeProvider: RealtimeProvider | null;
+  chatStatus: import('@khaveeai/core').ChatStatus;
 }
 
 const KhaveeContext = createContext<KhaveeContextType | null>(null);
@@ -91,6 +92,7 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
   const [realtimeProvider, setRealtimeProvider] = useState<RealtimeProvider | null>(
     config?.realtime || null
   );
+  const [chatStatus, setChatStatus] = useState<import('@khaveeai/core').ChatStatus>("stopped");
 
   // Note: Realtime provider connection is now manual - user must call connect() explicitly
 
@@ -100,6 +102,13 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
       setRealtimeProvider(config?.realtime || null);
     }
   }, [config?.realtime, realtimeProvider]);
+
+  // Listen to chat status changes from realtime provider
+  useEffect(() => {
+    if (realtimeProvider) {
+      realtimeProvider.onChatStatusChange = setChatStatus;
+    }
+  }, [realtimeProvider]);
 
   /**
    * setExpression - Set a single VRM facial expression with smooth transition
@@ -235,7 +244,7 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
   }, []);
 
   return (
-    <KhaveeContext.Provider value={{ 
+    <KhaveeContext.Provider value={{
       config,
       vrm,
       setVrm,
@@ -248,6 +257,7 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
       stopAnimation,
       availableAnimations,
       realtimeProvider,
+      chatStatus,
     }}>
       {children}
     </KhaveeContext.Provider>

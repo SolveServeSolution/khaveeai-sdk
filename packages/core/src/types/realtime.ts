@@ -62,18 +62,21 @@ export interface RealtimeProvider extends RealtimeEvents {
   // Connection management
   connect(): Promise<void>;
   disconnect(): Promise<void>;
-  
+
   // Messaging
   sendMessage(text: string): Promise<void>;
   interrupt(): void;
-  
+
   // Function registration
   registerFunction(tool: RealtimeTool): void;
-  
+
   // State
   isConnected: boolean;
   chatStatus: ChatStatus;
   conversation: Conversation[];
   currentVolume: number;
   onAudioData?: (analyser: AnalyserNode, audioContext: AudioContext) => void;
+
+  // Audio analysis
+  getAudioAnalyser(): { analyser: AnalyserNode; audioContext: AudioContext } | null;
 }
