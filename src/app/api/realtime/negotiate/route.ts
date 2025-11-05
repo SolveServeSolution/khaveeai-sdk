@@ -7,7 +7,6 @@ export async function POST(req: NextRequest) {
     }
 
     const offerSDP = await req.text();
-    console.log(offerSDP)
 
     const response = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03&voice=coral", {
       method: "POST",

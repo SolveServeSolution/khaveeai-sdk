@@ -177,6 +177,7 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
 
     this.ephemeralUserMessageId = null;
     this.currentVolume = 0;
+    this.onVolumeChange?.(0);
     this.conversation = [];
     this.setChatStatus("stopped");
     this.hasHeardFirstGreeting = false;
@@ -337,6 +338,35 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           this.setChatStatus("thinking");
           break;
 
+        case "response.created":
+          // AI starts generating a response
+          this.setChatStatus("thinking");
+          break;
+
+        case "response.output_item.added":
+          // AI starts speaking - create initial message
+          this.setChatStatus(
+            this.hasHeardFirstGreeting ? "speaking" : "starting"
+          );
+          // Create an initial empty message for streaming
+          const newMessage: Conversation = {
+            id: uuidv4(),
+            role: "assistant",
+            text: "",
+            timestamp: new Date().toISOString(),
+            isFinal: false,
+          };
+          this.conversation.push(newMessage);
+          this.onConversationUpdate?.(this.conversation);
+          break;
+
+        case "response.audio.delta":
+          // Audio response is being generated
+          this.setChatStatus(
+            this.hasHeardFirstGreeting ? "speaking" : "starting"
+          );
+          break;
+
         case "response.audio_transcript.delta":
           this.setChatStatus(
             this.hasHeardFirstGreeting ? "speaking" : "starting"
@@ -345,11 +375,26 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           break;
 
         case "response.audio_transcript.done":
+          // Don't change status to 'ready' yet - wait for audio to finish
           this.finalizeLastAssistantMessage();
+          break;
+
+        case "response.text.delta":
+          // Text response (no audio)
+          this.setChatStatus(
+            this.hasHeardFirstGreeting ? "speaking" : "starting"
+          );
+          this.handleAssistantTranscript(msg.delta);
+          break;
+
+        case "response.text.done":
+          // For text-only responses, change to ready immediately
           this.setChatStatus(this.hasHeardFirstGreeting ? "ready" : "starting");
+          this.finalizeLastAssistantMessage();
           break;
 
         case "output_audio_buffer.stopped":
+          // Audio playback has actually finished - now we can change to ready
           if (!this.hasHeardFirstGreeting) {
             this.enableMic();
             this.hasHeardFirstGreeting = true;
@@ -458,6 +503,39 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   }
 
   /**
+   * Start volume analysis loop
+   */
+  private startVolumeAnalysis(): void {
+    if (!this.audioOutputAnalyser) return;
+
+    const analyser = this.audioOutputAnalyser;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const analyzeVolume = () => {
+      if (!this.audioOutputAnalyser) return;
+
+      analyser.getByteFrequencyData(dataArray);
+
+      // Calculate RMS (Root Mean Square) volume
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const normalized = dataArray[i] / 255; // Normalize to 0-1
+        sum += normalized * normalized;
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+
+      // Update current volume (0-1 range)
+      this.currentVolume = Math.min(1, rms * 3); // Boost sensitivity
+      this.onVolumeChange?.(this.currentVolume);
+
+      // Continue analysis
+      requestAnimationFrame(analyzeVolume);
+    };
+
+    analyzeVolume();
+  }
+
+  /**
    * Enable microphone after first greeting
    */
   private enableMic(): void {
@@ -466,7 +544,6 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
         .getAudioTracks()
         .forEach((track) => (track.enabled = true));
       this.micEnabled = true;
-      console.log("Microphone enabled");
     }
   }
 
@@ -498,6 +575,9 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           
           // Notify listeners that audio analysis is available
           this.onAudioData?.(this.audioOutputAnalyser, this.audioOutputContext);
+
+          // Start volume analysis loop
+          this.startVolumeAnalysis();
         }
       };
     } catch (error) {

@@ -1,10 +1,10 @@
 "use client";
 import type {
-    ChatStatus,
-    Conversation,
-    RealtimeTool,
-    PhonemeData,
-    MouthState
+  ChatStatus,
+  Conversation,
+  RealtimeTool,
+  PhonemeData,
+  MouthState,
 } from "@khaveeai/core";
 import { useCallback, useEffect, useState } from "react";
 import { useKhavee } from "../KhaveeProvider";
@@ -24,10 +24,13 @@ export function useRealtime() {
   const [conversation, setConversation] = useState<Conversation[]>([]);
   const [currentVolume, setCurrentVolume] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
-  
+
   // Lip sync state
-  const [currentPhoneme, setCurrentPhoneme] = useState<PhonemeData | null>(null);
-  const [lipSyncAnalyzer, setLipSyncAnalyzer] = useState<RealtimeAudioAnalyzer | null>(null);
+  const [currentPhoneme, setCurrentPhoneme] = useState<PhonemeData | null>(
+    null
+  );
+  const [lipSyncAnalyzer, setLipSyncAnalyzer] =
+    useState<RealtimeAudioAnalyzer | null>(null);
 
   if (!realtimeProvider) {
     throw new Error(
@@ -39,7 +42,13 @@ export function useRealtime() {
   useEffect(() => {
     const provider = realtimeProvider;
 
-    provider.onConnect = () => setIsConnected(true);
+    provider.onConnect = () => {
+      setIsConnected(true);
+      // Auto-start lip sync when connected
+      if (!lipSyncAnalyzer) {
+        startAutoLipSync();
+      }
+    };
     provider.onDisconnect = () => {
       setIsConnected(false);
       // Stop lip sync when disconnected
@@ -50,41 +59,48 @@ export function useRealtime() {
       setCurrentPhoneme(null);
       setMultipleExpressions({ aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 });
     };
-    
+
     provider.onConversationUpdate = (conv) => setConversation(conv);
-    
+
     provider.onChatStatusChange = (status) => {
       setChatStatus(status);
       setIsThinking(status === "thinking");
-      
-      console.log("Chat status changed to:", status); // Debug log
-      
-      // Auto-start lip sync when AI starts speaking
-      if (status === "speaking") {
-        if (!lipSyncAnalyzer) {
-          console.log("Starting auto lip sync..."); // Debug log
-          startAutoLipSync();
-        }
-      }
-      // Don't auto-stop - let it continue analyzing
-      // Only stop when explicitly disconnected or error occurs
+      // Lip sync is now started automatically on connect and audio availability
     };
-    
+
     provider.onVolumeChange = (volume) => setCurrentVolume(volume);
 
     // Handle audio data availability for lip sync
-    provider.onAudioData = (analyser: AnalyserNode, audioContext: AudioContext) => {
-      console.log("Received audio data for lip sync"); // Debug log
+    provider.onAudioData = (
+      analyser: AnalyserNode,
+      audioContext: AudioContext
+    ) => {
+      // Auto-start lip sync when audio becomes available
+      if (!lipSyncAnalyzer) {
+        startAutoLipSync();
+      }
       if (lipSyncAnalyzer) {
         lipSyncAnalyzer.updateAudioSource(analyser, audioContext);
       }
     };
 
-    // Sync with provider state
-    setIsConnected(provider.isConnected);
-    setChatStatus(provider.chatStatus);
-    setConversation(provider.conversation);
-    setCurrentVolume(provider.currentVolume);
+    // Sync with provider state and setup continuous updates
+    const updateStates = () => {
+      setIsConnected(provider.isConnected);
+      setChatStatus(provider.chatStatus);
+      setConversation(provider.conversation);
+      setCurrentVolume(provider.currentVolume);
+    };
+
+    updateStates();
+
+    // Auto-start lip sync if provider is already connected
+    if (provider.isConnected && !lipSyncAnalyzer) {
+      startAutoLipSync();
+    }
+
+    // Set up interval to continuously sync state (fallback)
+    const stateSyncInterval = setInterval(updateStates, 100);
 
     return () => {
       // Cleanup listeners
@@ -94,7 +110,10 @@ export function useRealtime() {
       provider.onChatStatusChange = undefined;
       provider.onVolumeChange = undefined;
       provider.onAudioData = undefined;
-      
+
+      // Cleanup state sync interval
+      clearInterval(stateSyncInterval);
+
       // Stop lip sync
       if (lipSyncAnalyzer) {
         lipSyncAnalyzer.stop();
@@ -132,7 +151,7 @@ export function useRealtime() {
   // Auto lip sync functions
   const startAutoLipSync = useCallback(async () => {
     if (!realtimeProvider) return;
-    
+
     // If analyzer already exists, don't create new one
     if (lipSyncAnalyzer) {
       console.log("Lip sync analyzer already running");
@@ -140,7 +159,6 @@ export function useRealtime() {
     }
 
     try {
-      console.log("Creating new lip sync analyzer...");
       const analyzer = new RealtimeAudioAnalyzer({
         sensitivity: 0.2,
         intensityMultiplier: 6.0,
@@ -164,14 +182,12 @@ export function useRealtime() {
 
       setLipSyncAnalyzer(analyzer);
       await analyzer.start();
-      console.log("Lip sync analyzer started successfully");
     } catch (error) {
       console.error("Auto lip sync failed:", error);
     }
   }, [realtimeProvider, setMultipleExpressions]);
 
   const stopAutoLipSync = useCallback(() => {
-    console.log("Stopping auto lip sync...");
     if (lipSyncAnalyzer) {
       lipSyncAnalyzer.stop();
       setLipSyncAnalyzer(null);
@@ -195,7 +211,7 @@ export function useRealtime() {
     sendMessage,
     interrupt,
     registerFunction,
-    
+
     // Lip sync controls for debugging
     startAutoLipSync,
     stopAutoLipSync,
@@ -208,35 +224,35 @@ const phonemeTemplates: Record<string, number[][]> = {
     [13.2, 11.5, 9.3, 7.1, 5.8, 4.2, 2.9, 1.5, 0.7, -0.3, -1.0, -1.7, -2.5],
     [12.8, 10.9, 8.8, 6.9, 5.5, 4.0, 2.7, 1.3, 0.5, -0.5, -1.2, -1.9, -2.7],
     [13.6, 11.8, 9.6, 7.3, 6.0, 4.4, 3.1, 1.7, 0.9, -0.1, -0.8, -1.5, -2.3],
-    [12.4, 10.7, 8.5, 6.5, 5.2, 3.8, 2.5, 1.1, 0.3, -0.7, -1.4, -2.1, -2.9]
+    [12.4, 10.7, 8.5, 6.5, 5.2, 3.8, 2.5, 1.1, 0.3, -0.7, -1.4, -2.1, -2.9],
   ],
   ee: [
     [14.1, 12.0, 10.0, 8.1, 6.3, 4.5, 3.2, 2.0, 0.9, -0.1, -1.2, -2.0, -3.0],
     [13.7, 11.6, 9.6, 7.8, 6.0, 4.2, 2.9, 1.7, 0.6, -0.4, -1.5, -2.3, -3.3],
     [14.5, 12.4, 10.4, 8.4, 6.6, 4.8, 3.5, 2.3, 1.2, 0.2, -0.9, -1.7, -2.7],
-    [13.3, 11.2, 9.2, 7.4, 5.7, 3.9, 2.6, 1.4, 0.3, -0.6, -1.8, -2.6, -3.6]
+    [13.3, 11.2, 9.2, 7.4, 5.7, 3.9, 2.6, 1.4, 0.3, -0.6, -1.8, -2.6, -3.6],
   ],
   ou: [
     [10.2, 8.1, 6.3, 4.5, 3.1, 1.8, 0.5, -0.3, -1.0, -1.6, -2.2, -2.9, -3.5],
     [9.8, 7.7, 5.9, 4.1, 2.7, 1.4, 0.1, -0.7, -1.4, -2.0, -2.6, -3.3, -3.9],
     [10.6, 8.5, 6.7, 4.9, 3.5, 2.2, 0.9, 0.1, -0.6, -1.2, -1.8, -2.5, -3.1],
-    [9.4, 7.3, 5.5, 3.7, 2.3, 1.0, -0.3, -1.1, -1.8, -2.4, -3.0, -3.7, -4.3]
+    [9.4, 7.3, 5.5, 3.7, 2.3, 1.0, -0.3, -1.1, -1.8, -2.4, -3.0, -3.7, -4.3],
   ],
   ih: [
     [12.8, 10.7, 8.5, 6.0, 4.3, 2.2, 1.0, 0.2, -0.5, -1.2, -1.9, -2.1, -2.8],
     [12.4, 10.3, 8.1, 5.6, 3.9, 1.8, 0.6, -0.2, -0.9, -1.6, -2.3, -2.5, -3.2],
     [13.2, 11.1, 8.9, 6.4, 4.7, 2.6, 1.4, 0.6, -0.1, -0.8, -1.5, -1.7, -2.4],
-    [12.0, 9.9, 7.7, 5.2, 3.5, 1.4, 0.2, -0.6, -1.3, -2.0, -2.7, -2.9, -3.6]
+    [12.0, 9.9, 7.7, 5.2, 3.5, 1.4, 0.2, -0.6, -1.3, -2.0, -2.7, -2.9, -3.6],
   ],
   oh: [
     [11.0, 9.2, 7.1, 5.3, 3.9, 2.5, 1.2, 0.3, -0.6, -1.4, -2.0, -2.6, -3.3],
     [10.6, 8.8, 6.7, 4.9, 3.5, 2.1, 0.8, -0.1, -1.0, -1.8, -2.4, -3.0, -3.7],
     [11.4, 9.6, 7.5, 5.7, 4.3, 2.9, 1.6, 0.7, -0.2, -1.0, -1.6, -2.2, -2.9],
-    [10.2, 8.4, 6.3, 4.5, 3.1, 1.7, 0.4, -0.5, -1.4, -2.2, -2.8, -3.4, -4.1]
+    [10.2, 8.4, 6.3, 4.5, 3.1, 1.7, 0.4, -0.5, -1.4, -2.2, -2.8, -3.4, -4.1],
   ],
   sil: [
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+    [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
   ],
 };
 
@@ -287,9 +303,8 @@ class RealtimeAudioAnalyzer {
   async start() {
     this.isRunning = true;
     this.reconnectAttempts = 0;
-    
-    console.log("Starting realtime audio analyzer...");
-    
+
+
     try {
       await this.attemptConnection();
     } catch (error) {
@@ -303,27 +318,26 @@ class RealtimeAudioAnalyzer {
     try {
       // Try to get audio from provider first
       const providerAudio = this.config.realtimeProvider.getAudioAnalyser?.();
-      
+
       if (providerAudio) {
-        console.log("Using provider audio analyser");
         this.analyser = providerAudio.analyser;
         this.audioContext = providerAudio.audioContext;
         this.setupMeydaAnalyzer();
         return;
       }
-      
+
       // Fallback to manual audio capture
-      console.log("Provider audio not available, using fallback");
       await this.setupAudioCapture();
-      
     } catch (error) {
       console.error("Connection attempt failed:", error);
-      
+
       // If connection fails, try again after delay
-      if (this.reconnectAttempts < this.maxReconnectAttempts && this.isRunning) {
+      if (
+        this.reconnectAttempts < this.maxReconnectAttempts &&
+        this.isRunning
+      ) {
         this.reconnectAttempts++;
-        console.log(`Retrying connection (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        
+
         setTimeout(() => {
           if (this.isRunning) {
             this.attemptConnection();
@@ -336,8 +350,7 @@ class RealtimeAudioAnalyzer {
   }
 
   updateAudioSource(analyser: AnalyserNode, audioContext: AudioContext) {
-    console.log("Updating audio source from provider");
-    
+
     // Stop current Meyda analyzer
     if (this.meydaAnalyzer) {
       this.meydaAnalyzer.stop();
@@ -353,7 +366,7 @@ class RealtimeAudioAnalyzer {
     // Update to use provider's audio stream
     this.analyser = analyser;
     this.audioContext = audioContext;
-    
+
     // Restart analysis with new audio source
     if (this.isRunning) {
       this.setupMeydaAnalyzer();
@@ -363,19 +376,19 @@ class RealtimeAudioAnalyzer {
   stop() {
     console.log("Stopping realtime audio analyzer");
     this.isRunning = false;
-    
+
     if (this.meydaAnalyzer) {
       this.meydaAnalyzer.stop();
       this.meydaAnalyzer = null;
     }
-    
+
     if (this.fallbackInterval) {
       clearInterval(this.fallbackInterval);
       this.fallbackInterval = null;
     }
-    
+
     // Don't close audio context if it came from provider
-    if (this.audioContext && this.audioContext.state !== 'closed') {
+    if (this.audioContext && this.audioContext.state !== "closed") {
       try {
         this.audioContext.close();
       } catch (error) {
@@ -394,51 +407,55 @@ class RealtimeAudioAnalyzer {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: false,
-        audio: true
+        audio: true,
       });
-      
+
       const source = this.audioContext.createMediaStreamSource(stream);
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 2048;
       this.analyser.smoothingTimeConstant = 0.6;
-      
+
       source.connect(this.analyser);
       this.setupMeydaAnalyzer();
       return;
     } catch (error) {
       console.warn("Display media not available, using microphone fallback");
-      
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false
-          } 
+            autoGainControl: false,
+          },
         });
-        
+
         const source = this.audioContext.createMediaStreamSource(stream);
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 2048;
         this.analyser.smoothingTimeConstant = 0.6;
-        
+
         source.connect(this.analyser);
         this.setupMeydaAnalyzer();
       } catch (micError) {
-        throw new Error("Could not setup any audio capture method for realtime lip sync");
+        throw new Error(
+          "Could not setup any audio capture method for realtime lip sync"
+        );
       }
     }
   }
 
   private setupMeydaAnalyzer() {
     if (!this.analyser || !this.audioContext) {
-      console.warn("Cannot setup Meyda analyzer: missing analyser or audioContext");
+      console.warn(
+        "Cannot setup Meyda analyzer: missing analyser or audioContext"
+      );
       return;
     }
 
     try {
       console.log("Setting up Meyda analyzer...");
-      
+
       import("meyda")
         .then((Meyda) => {
           if (!this.isRunning || !this.analyser || !this.audioContext) {
@@ -462,8 +479,7 @@ class RealtimeAudioAnalyzer {
           });
 
           this.meydaAnalyzer.start();
-          console.log("Meyda analyzer started successfully");
-          
+
           // Clear any fallback interval since Meyda is working
           if (this.fallbackInterval) {
             clearInterval(this.fallbackInterval);
@@ -471,19 +487,24 @@ class RealtimeAudioAnalyzer {
           }
         })
         .catch((error) => {
-          console.warn("Meyda not available, using basic frequency analysis:", error);
+          console.warn(
+            "Meyda not available, using basic frequency analysis:",
+            error
+          );
           this.startFallbackAnalysis();
         });
     } catch (error) {
-      console.warn("Failed to setup MFCC analysis, using basic frequency analysis:", error);
+      console.warn(
+        "Failed to setup MFCC analysis, using basic frequency analysis:",
+        error
+      );
       this.startFallbackAnalysis();
     }
   }
 
   private startFallbackAnalysis() {
     if (this.fallbackInterval) return; // Already running
-    
-    console.log("Starting fallback frequency analysis");
+
     this.fallbackInterval = setInterval(() => {
       if (this.isRunning) {
         this.analyze();
@@ -519,24 +540,27 @@ class RealtimeAudioAnalyzer {
         }
       }
 
-      const confidence = secondBestDistance > 0 ? 
-        Math.min(1.0, secondBestDistance / Math.max(lowestDistance, 0.1)) : 1.0;
+      const confidence =
+        secondBestDistance > 0
+          ? Math.min(1.0, secondBestDistance / Math.max(lowestDistance, 0.1))
+          : 1.0;
 
       const baseThreshold = (1.0 - this.config.sensitivity) * 60;
       const dynamicThreshold = baseThreshold * (2.0 - confidence);
-      
+
       if (lowestDistance < dynamicThreshold) {
         let intensity = Math.max(0, Math.min(1, 1 - lowestDistance / 60));
 
         intensity = intensity * confidence * 1.2;
         intensity = intensity * (this.config.sensitivity + 0.7);
         intensity = intensity * (this.config.intensityMultiplier || 1.0);
-        
+
         intensity = Math.max(intensity, this.config.minIntensity || 0);
         intensity = Math.min(intensity, 1.0);
 
-        const shouldUpdate = bestMatch !== this.lastPhoneme || 
-                            Math.abs(intensity - (this.lastIntensity || 0)) > 0.1;
+        const shouldUpdate =
+          bestMatch !== this.lastPhoneme ||
+          Math.abs(intensity - (this.lastIntensity || 0)) > 0.1;
 
         if (shouldUpdate && intensity > 0.05) {
           const phonemeData: PhonemeData = {
@@ -575,7 +599,7 @@ class RealtimeAudioAnalyzer {
       }
     } catch (error) {
       console.error("Error in frequency analysis:", error);
-      
+
       // If error occurs repeatedly, try to reconnect
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         console.log("Attempting to reconnect due to analysis error...");
@@ -688,9 +712,13 @@ class RealtimeAudioAnalyzer {
     const freqPerBin = sampleRate / (data.length * 2);
 
     for (let i = 2; i < data.length - 2; i++) {
-      if (data[i] > data[i - 1] && data[i] > data[i + 1] && 
-          data[i] > data[i - 2] && data[i] > data[i + 2] && 
-          data[i] > -50) {
+      if (
+        data[i] > data[i - 1] &&
+        data[i] > data[i + 1] &&
+        data[i] > data[i - 2] &&
+        data[i] > data[i + 2] &&
+        data[i] > -50
+      ) {
         const freq = i * freqPerBin;
         if (freq > 80 && freq < 4000) {
           const prominence = Math.min(
@@ -720,7 +748,7 @@ class RealtimeAudioAnalyzer {
         const linearValue = Math.pow(10, data[i] / 12);
         sum += linearValue;
         count++;
-        
+
         const freq = (i * 44100) / (data.length * 2);
         if (freq > 200 && freq < 3000 && data[i] > -50) {
           peakSum += linearValue;
@@ -731,8 +759,8 @@ class RealtimeAudioAnalyzer {
 
     const baseIntensity = count > 0 ? Math.sqrt(sum / count) : 0;
     const peakIntensity = peakCount > 0 ? Math.sqrt(peakSum / peakCount) : 0;
-    
-    const combinedIntensity = (baseIntensity * 0.3 + peakIntensity * 0.7);
+
+    const combinedIntensity = baseIntensity * 0.3 + peakIntensity * 0.7;
     return Math.min(combinedIntensity * 3.0, 1.0);
   }
 }
@@ -746,7 +774,7 @@ function phonemeToMouthState(
 
   if (phoneme.phoneme !== "sil" && phoneme.intensity > 0.01) {
     let boostedIntensity = phoneme.intensity * intensityMultiplier;
-    
+
     const phonemeBoosts = {
       aa: 2.2,
       ih: 1.8,
@@ -754,27 +782,27 @@ function phonemeToMouthState(
       ee: 1.7,
       oh: 1.9,
     };
-    
+
     boostedIntensity *= phonemeBoosts[phoneme.phoneme] || 1.0;
     boostedIntensity *= 1.8;
     boostedIntensity = Math.pow(boostedIntensity, 0.7);
     boostedIntensity = Math.min(boostedIntensity, 1.0);
-    
+
     const minMovement = {
       aa: 0.25,
       ih: 0.15,
-      ou: 0.20,
+      ou: 0.2,
       ee: 0.15,
       oh: 0.18,
     };
-    
+
     const finalIntensity = Math.max(
-      boostedIntensity, 
+      boostedIntensity,
       minMovement[phoneme.phoneme] || 0.12
     );
-    
+
     state[phoneme.phoneme] = finalIntensity;
-    
+
     const blendRatio = 0.15;
     switch (phoneme.phoneme) {
       case "aa":

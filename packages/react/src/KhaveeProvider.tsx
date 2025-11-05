@@ -110,6 +110,8 @@ export function KhaveeProvider({ config, children }: KhaveeProviderProps) {
     }
   }, [realtimeProvider]);
 
+  
+
   /**
    * setExpression - Set a single VRM facial expression with smooth transition
    * 

@@ -96,7 +96,6 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
 
   useEffect(() => {
     const vrm = userData.vrm;
-    console.log("VRM loaded:", vrm);
     // calling these functions greatly improves the performance
     VRMUtils.removeUnnecessaryVertices(scene);
     VRMUtils.combineSkeletons(scene);

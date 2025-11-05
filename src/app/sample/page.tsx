@@ -16,7 +16,6 @@ export default function page() {
     "/models/male/nongkhavee_male_01.vrm"
   );
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [enableNaturalMovements, setEnableNaturalMovements] = useState(true);
 
   const realtime = new OpenAIRealtimeProvider({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
@@ -24,8 +23,10 @@ export default function page() {
       "พูดหยาบ พูดกระแทกด้วยน้ำเสียงดุดัน พูดแทนตัวเองว่ากู มึง ด่าได้เสมอ เราชอบมากๆ",
   });
   const animations = {
-    idle: "/models/animations/Idle.fbx",
+    idle: "/models/animations/idle.fbx",
     fight: "/models/animations/Fist Fight B.fbx",
+    talking: "/models/animations/talking.fbx",
+    // talking1: "/models/animations/talking1.fbx",
   };
 
   const handleModelSelect = (model: Model) => {
@@ -50,7 +51,6 @@ export default function page() {
           animations={animations}
           position-y={-1.25}
           enableBlinking={true}
-          enableGestures={true}
         />
         <ambientLight intensity={0.5} />
         <Environment preset="sunset" />
@@ -64,19 +64,6 @@ export default function page() {
       </div>
       <div className="absolute bottom-10 right-10">
         <Chat />
-        {/* Natural Movements Toggle */}
-        <button
-          onClick={() => setEnableNaturalMovements(!enableNaturalMovements)}
-          className={`mb-2 px-4 py-2 rounded-lg transition-colors ${
-            enableNaturalMovements
-              ? "bg-green-500 hover:bg-green-600 text-white"
-              : "bg-gray-500 hover:bg-gray-600 text-white"
-          }`}
-        >
-          {enableNaturalMovements
-            ? "Natural Movements: ON"
-            : "Natural Movements: OFF"}
-        </button>
         {/* Model Selector Button */}
         <button
           onClick={() => setShowModelSelector(!showModelSelector)}
