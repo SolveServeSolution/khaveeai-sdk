@@ -487,8 +487,8 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
     if (this.audioStream && !this.micEnabled) {
       this.audioStream
         .getAudioTracks()
-        .forEach((track) => (track.enabled = false));
-      this.micEnabled = false;
+        .forEach((track) => (track.enabled = true));
+      this.micEnabled = true;
       console.log("Microphone enabled");
     }
   }
