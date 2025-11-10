@@ -32,7 +32,7 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   private ephemeralUserMessageId: string | null = null;
   private micEnabled = false;
   private hasHeardFirstGreeting = false;
-  
+
   // Audio streams for lip sync
   private audioOutputAnalyser: AnalyserNode | null = null;
   private audioOutputContext: AudioContext | null = null;
@@ -48,7 +48,10 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   public onAudioEnd?: () => void;
   public onVolumeChange?: (volume: number) => void;
   public onToolCall?: (toolName: string, args: any, result: any) => void;
-  public onAudioData?: (analyser: AnalyserNode, audioContext: AudioContext) => void;
+  public onAudioData?: (
+    analyser: AnalyserNode,
+    audioContext: AudioContext
+  ) => void;
 
   constructor(config: RealtimeConfig) {
     this.config = {
@@ -112,18 +115,25 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       await pc.setLocalDescription(offer);
 
       // Send directly to OpenAI Realtime API (no separate API endpoint needed)
-      const response = await fetch(`https://api.openai.com/v1/realtime?model=${this.config.model || 'gpt-4o-realtime-preview-2025-06-03'}&voice=${this.config.voice || 'coral'}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${this.config.apiKey}`,
-          "Content-Type": "application/sdp",
-        },
-        body: offer.sdp,
-      });
+      const response = await fetch(
+        `https://api.openai.com/v1/realtime?model=${
+          this.config.model || "gpt-4o-realtime-preview-2025-06-03"
+        }&voice=${this.config.voice || "coral"}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            "Content-Type": "application/sdp",
+          },
+          body: offer.sdp,
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to negotiate WebRTC session: ${response.status} ${errorText}`);
+        throw new Error(
+          `Failed to negotiate WebRTC session: ${response.status} ${errorText}`
+        );
       }
 
       const answerSdp = await response.text();
@@ -249,14 +259,19 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
     const sessionConfig: any = {
       modalities: ["text", "audio"],
       input_audio_transcription: {
-        model: "whisper-1",
+        model: "gpt-4o-transcribe",
         language: this.config.language || "en",
       },
       voice: this.config.voice || "shimmer",
-      instructions: this.config.instructions || "You are a helpful AI assistant.",
+      instructions:
+        this.config.instructions || "You are a helpful AI assistant.",
       temperature: this.config.temperature ?? 0.8,
       turn_detection: {
-        type: "server_vad",
+        type: "semantic_vad",
+        eagerness: "high",
+      },
+      input_audio_noise_reduction: {
+        type: "near_field",
       },
     };
 
@@ -267,16 +282,18 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
         const properties: any = {};
         const requiredFields: string[] = [];
 
-        Object.entries(tool.parameters).forEach(([key, param]: [string, any]) => {
-          // Extract 'required' flag before adding to properties
-          const { required, ...paramSchema } = param;
-          properties[key] = paramSchema;
-          
-          // Track which fields are required
-          if (required === true) {
-            requiredFields.push(key);
+        Object.entries(tool.parameters).forEach(
+          ([key, param]: [string, any]) => {
+            // Extract 'required' flag before adding to properties
+            const { required, ...paramSchema } = param;
+            properties[key] = paramSchema;
+
+            // Track which fields are required
+            if (required === true) {
+              requiredFields.push(key);
+            }
           }
-        });
+        );
 
         return {
           type: "function",
@@ -297,7 +314,6 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       session: sessionConfig,
     };
 
-    
     this.dataChannel.send(JSON.stringify(sessionUpdate));
     this.dataChannel.send(JSON.stringify({ type: "response.create" }));
     this.setChatStatus("ready");
@@ -502,23 +518,24 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       peerConnection.ontrack = (event) => {
         const [stream] = event.streams;
         const audioTrack = stream.getAudioTracks()[0];
-        
+
         if (audioTrack) {
           // Create audio context for analyzing OpenAI's output
           this.audioOutputContext = new AudioContext();
-          const source = this.audioOutputContext.createMediaStreamSource(stream);
-          
+          const source =
+            this.audioOutputContext.createMediaStreamSource(stream);
+
           // Create analyser for lip sync
           this.audioOutputAnalyser = this.audioOutputContext.createAnalyser();
           this.audioOutputAnalyser.fftSize = 2048;
           this.audioOutputAnalyser.smoothingTimeConstant = 0.6;
-          
+
           // Connect source to analyser
           source.connect(this.audioOutputAnalyser);
-          
+
           // Also connect to destination for audio playback
           source.connect(this.audioOutputContext.destination);
-          
+
           // Notify listeners that audio analysis is available
           this.onAudioData?.(this.audioOutputAnalyser, this.audioOutputContext);
         }
@@ -531,11 +548,14 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   /**
    * Get audio analyser for lip sync
    */
-  getAudioAnalyser(): { analyser: AnalyserNode; audioContext: AudioContext } | null {
+  getAudioAnalyser(): {
+    analyser: AnalyserNode;
+    audioContext: AudioContext;
+  } | null {
     if (this.audioOutputAnalyser && this.audioOutputContext) {
       return {
         analyser: this.audioOutputAnalyser,
-        audioContext: this.audioOutputContext
+        audioContext: this.audioOutputContext,
       };
     }
     return null;
