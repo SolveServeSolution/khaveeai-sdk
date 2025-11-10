@@ -13,7 +13,7 @@ export const Experience = () => {
       value: "amongus.vrm",
       options: [
         "amongus.vrm",
-        "262410318834873893.vrm",
+        "blacknwhitecat.vrm",
         "male.vrm",
         "3636451243928341470.vrm",
         "8087383217573817818.vrm",

@@ -1,13 +1,19 @@
 {
-  "name": "@khaveeai/react",
-  "version": "0.2.4",
-  "description": "React components and hooks for VRM AI avatars",
-  "keywords": ["react", "vrm", "avatar", "ai", "3d", "hooks", "components"],
+  "name": "@khaveeai/providers-rag",
+  "version": "0.1.0",
+  "description": "RAG (Retrieval-Augmented Generation) provider for Khavee AI SDK",
+  "keywords": [
+    "rag",
+    "retrieval",
+    "vector",
+    "embedding",
+    "ai"
+  ],
   "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SolveServeSolution/khaveeai-sdk.git",
-    "directory": "packages/react"
+    "directory": "packages/providers/rag"
   },
   "bugs": {
     "url": "https://github.com/SolveServeSolution/khaveeai-sdk/issues"
@@ -22,9 +28,6 @@
     "package.json",
     "README.md"
   ],
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -32,26 +35,18 @@
       "require": "./dist/index.js"
     }
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "@khaveeai/core": "workspace:*",
-    "@pixiv/three-vrm": "^3.4.2",
-    "@react-three/drei": "^10.7.6",
-    "@react-three/fiber": "^9.3.0",
-    "meyda": "^5.6.3",
-    "three": "^0.180.0"
+    "@qdrant/js-client-rest": "^1.11.0",
+    "openai": "^4.73.0"
   },
   "devDependencies": {
-    "@types/react": "^19",
-    "@types/three": "^0.180.0",
-    "react": "^19.1.0",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
-    "react": ">=18.0.0"
+    "typescript": "^5.0.0"
   }
 }

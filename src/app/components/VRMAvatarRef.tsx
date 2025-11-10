@@ -29,70 +29,70 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
     }
   );
 
-  const assetA = useFBX("models/animations/Swing Dancing.fbx");
-  const assetB = useFBX("models/animations/Thriller Part 2.fbx");
-  const assetC = useFBX("models/animations/Breathing Idle.fbx");
-  const assetD = useFBX("models/animations/Fist Fight B.fbx");
+  // const assetA = useFBX("models/animations/talking.fbx");
+  // const assetB = useFBX("models/animations/Thriller Part 2.fbx");
+  // const assetC = useFBX("models/animations/Breathing Idle.fbx");
+  // const assetD = useFBX("models/animations/Fist Fight B.fbx");
 
   const currentVrm = userData.vrm;
 
-  const animationClipA = useMemo(() => {
-    const clip = remapMixamoAnimationToVrm(currentVrm, assetA);
-    clip.name = "Swing Dancing";
-    return clip;
-  }, [assetA, currentVrm]);
+  // const animationClipA = useMemo(() => {
+  //   const clip = remapMixamoAnimationToVrm(currentVrm, assetA);
+  //   clip.name = "Swing Dancing";
+  //   return clip;
+  // }, [assetA, currentVrm]);
 
-  const animationClipB = useMemo(() => {
-    const clip = remapMixamoAnimationToVrm(currentVrm, assetB);
-    clip.name = "Thriller Part 2";
-    return clip;
-  }, [assetB, currentVrm]);
+  // const animationClipB = useMemo(() => {
+  //   const clip = remapMixamoAnimationToVrm(currentVrm, assetB);
+  //   clip.name = "Thriller Part 2";
+  //   return clip;
+  // }, [assetB, currentVrm]);
 
-  const animationClipC = useMemo(() => {
-    const clip = remapMixamoAnimationToVrm(currentVrm, assetC);
-    clip.name = "Idle";
-    return clip;
-  }, [assetC, currentVrm]);
+  // const animationClipC = useMemo(() => {
+  //   const clip = remapMixamoAnimationToVrm(currentVrm, assetC);
+  //   clip.name = "Idle";
+  //   return clip;
+  // }, [assetC, currentVrm]);
 
-  const animationClipD = useMemo(() => {
-    const clip = remapMixamoAnimationToVrm(currentVrm, assetD);
-    clip.name = "Fist Fight B";
-    return clip;
-  }, [assetD, currentVrm]);
+  // const animationClipD = useMemo(() => {
+  //   const clip = remapMixamoAnimationToVrm(currentVrm, assetD);
+  //   clip.name = "Fist Fight B";
+  //   return clip;
+  // }, [assetD, currentVrm]);
 
-  const { actions } = useAnimations(
-    [animationClipA, animationClipB, animationClipC, animationClipD],
-    currentVrm.scene
-  );
+  // const { actions } = useAnimations(
+  //   [animationClipA, animationClipB, animationClipC, animationClipD],
+  //   currentVrm.scene
+  // );
 
-  // Initialize animation mixer and maintain animation state
-  useEffect(() => {
-    if (currentVrm?.scene) {
-      mixerRef.current = new THREE.AnimationMixer(currentVrm.scene);
+  // // Initialize animation mixer and maintain animation state
+  // useEffect(() => {
+  //   if (currentVrm?.scene) {
+  //     mixerRef.current = new THREE.AnimationMixer(currentVrm.scene);
 
-      // Add clips to mixer
-      [animationClipA, animationClipB, animationClipC, animationClipD].forEach(
-        (clip) => {
-          if (clip) {
-            mixerRef.current?.clipAction(clip);
-          }
-        }
-      );
-    }
+  //     // Add clips to mixer
+  //     [animationClipA, animationClipB, animationClipC, animationClipD].forEach(
+  //       (clip) => {
+  //         if (clip) {
+  //           mixerRef.current?.clipAction(clip);
+  //         }
+  //       }
+  //     );
+  //   }
 
-    return () => {
-      if (mixerRef.current) {
-        mixerRef.current.stopAllAction();
-        mixerRef.current = null;
-      }
-    };
-  }, [
-    currentVrm,
-    animationClipA,
-    animationClipB,
-    animationClipC,
-    animationClipD,
-  ]);
+  //   return () => {
+  //     if (mixerRef.current) {
+  //       mixerRef.current.stopAllAction();
+  //       mixerRef.current = null;
+  //     }
+  //   };
+  // }, [
+  //   currentVrm,
+  //   animationClipA,
+  //   animationClipB,
+  //   animationClipC,
+  //   animationClipD,
+  // ]);
 
   useEffect(() => {
     const vrm = userData.vrm;
@@ -143,46 +143,46 @@ export default function VRMAvatar({ avatar, ...props }: VRMAvatarProps) {
   });
 
   // Handle animation switching with proper crossfading
-  useEffect(() => {
-    if (!mixerRef.current || animation === "None") {
-      // Stop current animation
-      if (currentActionRef.current) {
-        currentActionRef.current.fadeOut(0.3);
-        currentActionRef.current = null;
-      }
-      return;
-    }
+  // useEffect(() => {
+  //   if (!mixerRef.current || animation === "None") {
+  //     // Stop current animation
+  //     if (currentActionRef.current) {
+  //       currentActionRef.current.fadeOut(0.3);
+  //       currentActionRef.current = null;
+  //     }
+  //     return;
+  //   }
 
-    const targetClip = [
-      animationClipA,
-      animationClipB,
-      animationClipC,
-      animationClipD,
-    ].find((clip) => clip?.name === animation);
+  //   const targetClip = [
+  //     animationClipA,
+  //     animationClipB,
+  //     animationClipC,
+  //     animationClipD,
+  //   ].find((clip) => clip?.name === animation);
 
-    if (targetClip && mixerRef.current) {
-      const newAction = mixerRef.current.clipAction(targetClip);
+  //   if (targetClip && mixerRef.current) {
+  //     const newAction = mixerRef.current.clipAction(targetClip);
 
-      // Crossfade from current to new animation
-      if (currentActionRef.current && currentActionRef.current !== newAction) {
-        // Fade out current animation
-        currentActionRef.current.fadeOut(0.3);
-        // Fade in new animation
-        newAction.reset().fadeIn(0.3).play();
-      } else if (!currentActionRef.current) {
-        // Start new animation without fade
-        newAction.reset().play();
-      }
+  //     // Crossfade from current to new animation
+  //     if (currentActionRef.current && currentActionRef.current !== newAction) {
+  //       // Fade out current animation
+  //       currentActionRef.current.fadeOut(0.3);
+  //       // Fade in new animation
+  //       newAction.reset().fadeIn(0.3).play();
+  //     } else if (!currentActionRef.current) {
+  //       // Start new animation without fade
+  //       newAction.reset().play();
+  //     }
 
-      currentActionRef.current = newAction;
-    }
-  }, [
-    animation,
-    animationClipA,
-    animationClipB,
-    animationClipC,
-    animationClipD,
-  ]);
+  //     currentActionRef.current = newAction;
+  //   }
+  // }, [
+  //   animation,
+  //   animationClipA,
+  //   animationClipB,
+  //   animationClipC,
+  //   animationClipD,
+  // ]);
 
   // Smooth expression interpolation function
   const lerpExpression = (name: string, value: number, lerpFactor: number) => {

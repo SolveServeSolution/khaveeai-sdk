@@ -27,7 +27,7 @@ export interface RealtimeTool {
 export interface RealtimeConfig {
   apiKey: string;
   model?: 'gpt-4o-realtime-preview' | 'gpt-4o-mini-realtime-preview';
-  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
+  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' | 'coral' | 'sage';
   instructions?: string;
   temperature?: number;
   tools?: RealtimeTool[];

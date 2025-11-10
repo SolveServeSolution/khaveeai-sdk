@@ -9,6 +9,7 @@ import { OpenAIRealtimeProvider } from "@khaveeai/providers-openai-realtime";
 import Chat from "./components/Chat";
 import ModelSelector, { Model } from "@/app/sample/components/ModelSelector";
 import { useRef, useState } from "react";
+import { searchKnowledgeBase } from "./lib/rag"; // Import server action
 
 export default function page() {
   const controls = useRef(null);
@@ -20,8 +21,30 @@ export default function page() {
   const realtime = new OpenAIRealtimeProvider({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
     instructions:
-      "พูดหยาบ พูดกระแทกด้วยน้ำเสียงดุดัน พูดแทนตัวเองว่ากู มึง ด่าได้เสมอ เราชอบมากๆ",
+      "พูดคุยกับผู้ใช้เป็นกันเอง ใช้ search_knowledge_base tool เมื่อผู้ใช้ถามคำถามที่ต้องการข้อมูลเฉพาะเจาะจง",
+    tools: [
+      {
+        name: "search_knowledge_base",
+        description:
+          "Search the knowledge base for relevant information to answer questions accurately",
+        parameters: {
+          query: {
+            type: "string",
+            description: "The search query to find relevant information",
+            required: true,
+          },
+        },
+        execute: async (args: { query: string }) => {
+          console.log("🔍 RAG Search:", args.query);
+          const result = await searchKnowledgeBase(args.query);
+          console.log("📊 Found:", result.success);
+          console.log("📄 Context:", result.message);
+          return result;
+        },
+      },
+    ],
   });
+
   const animations = {
     idle: "/models/animations/idle.fbx",
     fight: "/models/animations/Fist Fight B.fbx",
@@ -46,12 +69,12 @@ export default function page() {
           minDistance={1}
           maxDistance={10}
         />
-        <VRMAvatar
+        {/* <VRMAvatar
           src={currentModel}
           animations={animations}
           position-y={-1.25}
           enableBlinking={true}
-        />
+        /> */}
         <ambientLight intensity={0.5} />
         <Environment preset="sunset" />
         <directionalLight position={[5, 5, 5]} intensity={1} />
@@ -65,12 +88,12 @@ export default function page() {
       <div className="absolute bottom-10 right-10">
         <Chat />
         {/* Model Selector Button */}
-        <button
+        {/* <button
           onClick={() => setShowModelSelector(!showModelSelector)}
           className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg mb-2 transition-colors"
         >
           {showModelSelector ? "Hide Models" : "Change Avatar"}
-        </button>
+        </button> */}
       </div>
 
       {/* Model Selector Modal */}

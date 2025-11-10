@@ -147,6 +147,22 @@ importers:
         specifier: ^5.0.0
         version: 5.9.2
 
+  packages/providers/rag:
+    dependencies:
+      '@khaveeai/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@qdrant/js-client-rest':
+        specifier: ^1.11.0
+        version: 1.15.1(typescript@5.9.2)
+      openai:
+        specifier: ^4.73.0
+        version: 4.104.0(ws@8.18.3)
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.2
+
   packages/react:
     dependencies:
       '@khaveeai/core':
@@ -548,6 +564,16 @@ packages:
   '@pixiv/types-vrmc-vrm-1.0@3.4.2':
     resolution: {integrity: sha512-AcbcDDtPevbmds2N7HUfPb/eKbMlbDaS4VADUNC2uO4pQDHa4vi1gDDxneYNFq4htQ2VUco9Yhqr5idp2MofOg==}
 
+  '@qdrant/js-client-rest@1.15.1':
+    resolution: {integrity: sha512-FAPMz6Z7RFj9vUun8R9e8SYcX6EkZtdfYfnh5lFXWcjEaat9q/jce1baAJCWAr3k8yHh62HpzCRYOatLVII28g==}
+    engines: {node: '>=18.17.0', pnpm: '>=8'}
+    peerDependencies:
+      typescript: '>=4.7'
+
+  '@qdrant/openapi-typescript-fetch@1.2.6':
+    resolution: {integrity: sha512-oQG/FejNpItrxRHoyctYvT3rwGZOnK4jr3JdppO/c78ktDvkWiPXPHNsrDf33K9sZdRb6PR7gi4noIapu5q4HA==}
+    engines: {node: '>=18.0.0', pnpm: '>=8'}
+
   '@radix-ui/primitive@1.0.0':
     resolution: {integrity: sha512-3e7rn8FDMin4CgeL7Z/49smCA3rFYY3Ha2rUQ7HRWFadS5iCRw08ZgVT1LaNTCNqgvrUiyczLflrVrF0SRQtNA==}
 
@@ -718,6 +744,9 @@ packages:
 
   '@rushstack/eslint-patch@1.12.0':
     resolution: {integrity: sha512-5EwMtOqvJMMa3HbmxLlF74e+3/HhwBTMcvt3nqVJgGCozO6hzIPOBlwm8mGVNR9SN2IJpxSnlxczyDjcn7qIyw==}
+
+  '@sevinf/maybe@0.5.0':
+    resolution: {integrity: sha512-ARhyoYDnY1LES3vYI0fiG6e9esWfTNcXcO6+MPJJXcnyMV3bim4lnFt45VXouV7y82F4x3YH8nOQ6VztuvUiWg==}
 
   '@stitches/react@1.2.8':
     resolution: {integrity: sha512-9g9dWI4gsSVe8bNLlb+lMkBYsnIKCZTmvqvDG+Avnn69XfmHZKiaMrx7cgTaddq7aTPPmXiTsbFcUy0xgI4+wA==}
@@ -2609,6 +2638,10 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
+  undici@6.22.0:
+    resolution: {integrity: sha512-hU/10obOIu62MGYjdskASR3CUAiYaFTtC9Pa6vHyf//mAipSvSQg6od2CnJswq7fvzNS3zJhxoRkgNVaHurWKw==}
+    engines: {node: '>=18.17'}
+
   unrs-resolver@1.11.1:
     resolution: {integrity: sha512-bSjt9pjaEBnNiGgc9rUiHGKv5l4/TGzDmYw3RhnkJGtLhbnnA/5qJj7x3dNDCRx/PJxu774LlH8lCOlB4hEfKg==}
 
@@ -3070,6 +3103,15 @@ snapshots:
 
   '@pixiv/types-vrmc-vrm-1.0@3.4.2': {}
 
+  '@qdrant/js-client-rest@1.15.1(typescript@5.9.2)':
+    dependencies:
+      '@qdrant/openapi-typescript-fetch': 1.2.6
+      '@sevinf/maybe': 0.5.0
+      typescript: 5.9.2
+      undici: 6.22.0
+
+  '@qdrant/openapi-typescript-fetch@1.2.6': {}
+
   '@radix-ui/primitive@1.0.0':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -3302,6 +3344,8 @@ snapshots:
   '@rtsao/scc@1.1.0': {}
 
   '@rushstack/eslint-patch@1.12.0': {}
+
+  '@sevinf/maybe@0.5.0': {}
 
   '@stitches/react@1.2.8(react@19.1.0)':
     dependencies:
@@ -5419,6 +5463,8 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
+
+  undici@6.22.0: {}
 
   unrs-resolver@1.11.1:
     dependencies:

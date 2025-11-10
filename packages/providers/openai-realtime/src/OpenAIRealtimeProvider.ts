@@ -177,7 +177,6 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
 
     this.ephemeralUserMessageId = null;
     this.currentVolume = 0;
-    this.onVolumeChange?.(0);
     this.conversation = [];
     this.setChatStatus("stopped");
     this.hasHeardFirstGreeting = false;
@@ -247,43 +246,58 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   private configureSession(): void {
     if (!this.dataChannel) return;
 
-    const sessionUpdate = {
-      type: "session.update",
-      session: {
-        modalities: ["text", "audio"],
-        tools:
-          this.config.tools?.map((tool) => ({
-            type: "function",
-            name: tool.name,
-            description: tool.description,
-            parameters: {
-              type: "object",
-              properties: tool.parameters,
-              required: Object.keys(tool.parameters).filter(
-                (key) => tool.parameters[key].required
-              ),
-            },
-          })) || [],
-        input_audio_transcription: {
-          model: "gpt-4o-transcribe",
-          language: this.config.language || "en",
-        },
-        voice: this.config.voice,
-        tool_choice: "auto",
-        instructions:
-          this.config.instructions || "You are a helpful AI assistant.",
-        speed: this.config.speed || 1.4,
-        temperature: this.config.temperature || 0.8,
-        turn_detection: {
-          type: "semantic_vad",
-          eagerness: "high",
-        },
-        input_audio_noise_reduction: {
-          type: "near_field",
-        },
+    const sessionConfig: any = {
+      modalities: ["text", "audio"],
+      input_audio_transcription: {
+        model: "whisper-1",
+        language: this.config.language || "en",
+      },
+      voice: this.config.voice || "shimmer",
+      instructions: this.config.instructions || "You are a helpful AI assistant.",
+      temperature: this.config.temperature ?? 0.8,
+      turn_detection: {
+        type: "server_vad",
       },
     };
 
+    // Only add tools and tool_choice if tools are provided
+    if (this.config.tools && this.config.tools.length > 0) {
+      sessionConfig.tools = this.config.tools.map((tool) => {
+        // Build parameters object, removing the 'required' field from each property
+        const properties: any = {};
+        const requiredFields: string[] = [];
+
+        Object.entries(tool.parameters).forEach(([key, param]: [string, any]) => {
+          // Extract 'required' flag before adding to properties
+          const { required, ...paramSchema } = param;
+          properties[key] = paramSchema;
+          
+          // Track which fields are required
+          if (required === true) {
+            requiredFields.push(key);
+          }
+        });
+
+        return {
+          type: "function",
+          name: tool.name,
+          description: tool.description,
+          parameters: {
+            type: "object",
+            properties,
+            required: requiredFields,
+          },
+        };
+      });
+      sessionConfig.tool_choice = "auto";
+    }
+
+    const sessionUpdate = {
+      type: "session.update",
+      session: sessionConfig,
+    };
+
+    
     this.dataChannel.send(JSON.stringify(sessionUpdate));
     this.dataChannel.send(JSON.stringify({ type: "response.create" }));
     this.setChatStatus("ready");
@@ -298,6 +312,14 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       this.onMessage?.(msg);
 
       switch (msg.type) {
+        case "session.updated":
+          console.log("Session:", msg.session);
+          break;
+
+        case "error":
+          console.error("❌ OpenAI Error:", msg);
+          break;
+
         case "input_audio_buffer.speech_started":
           this.getOrCreateEphemeralUserId();
           this.updateEphemeralUserMessage({ status: "speaking" });
@@ -338,35 +360,6 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           this.setChatStatus("thinking");
           break;
 
-        case "response.created":
-          // AI starts generating a response
-          this.setChatStatus("thinking");
-          break;
-
-        case "response.output_item.added":
-          // AI starts speaking - create initial message
-          this.setChatStatus(
-            this.hasHeardFirstGreeting ? "speaking" : "starting"
-          );
-          // Create an initial empty message for streaming
-          const newMessage: Conversation = {
-            id: uuidv4(),
-            role: "assistant",
-            text: "",
-            timestamp: new Date().toISOString(),
-            isFinal: false,
-          };
-          this.conversation.push(newMessage);
-          this.onConversationUpdate?.(this.conversation);
-          break;
-
-        case "response.audio.delta":
-          // Audio response is being generated
-          this.setChatStatus(
-            this.hasHeardFirstGreeting ? "speaking" : "starting"
-          );
-          break;
-
         case "response.audio_transcript.delta":
           this.setChatStatus(
             this.hasHeardFirstGreeting ? "speaking" : "starting"
@@ -375,26 +368,11 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           break;
 
         case "response.audio_transcript.done":
-          // Don't change status to 'ready' yet - wait for audio to finish
           this.finalizeLastAssistantMessage();
-          break;
-
-        case "response.text.delta":
-          // Text response (no audio)
-          this.setChatStatus(
-            this.hasHeardFirstGreeting ? "speaking" : "starting"
-          );
-          this.handleAssistantTranscript(msg.delta);
-          break;
-
-        case "response.text.done":
-          // For text-only responses, change to ready immediately
           this.setChatStatus(this.hasHeardFirstGreeting ? "ready" : "starting");
-          this.finalizeLastAssistantMessage();
           break;
 
         case "output_audio_buffer.stopped":
-          // Audio playback has actually finished - now we can change to ready
           if (!this.hasHeardFirstGreeting) {
             this.enableMic();
             this.hasHeardFirstGreeting = true;
@@ -503,47 +481,15 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   }
 
   /**
-   * Start volume analysis loop
-   */
-  private startVolumeAnalysis(): void {
-    if (!this.audioOutputAnalyser) return;
-
-    const analyser = this.audioOutputAnalyser;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-    const analyzeVolume = () => {
-      if (!this.audioOutputAnalyser) return;
-
-      analyser.getByteFrequencyData(dataArray);
-
-      // Calculate RMS (Root Mean Square) volume
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const normalized = dataArray[i] / 255; // Normalize to 0-1
-        sum += normalized * normalized;
-      }
-      const rms = Math.sqrt(sum / dataArray.length);
-
-      // Update current volume (0-1 range)
-      this.currentVolume = Math.min(1, rms * 3); // Boost sensitivity
-      this.onVolumeChange?.(this.currentVolume);
-
-      // Continue analysis
-      requestAnimationFrame(analyzeVolume);
-    };
-
-    analyzeVolume();
-  }
-
-  /**
    * Enable microphone after first greeting
    */
   private enableMic(): void {
     if (this.audioStream && !this.micEnabled) {
       this.audioStream
         .getAudioTracks()
-        .forEach((track) => (track.enabled = true));
-      this.micEnabled = true;
+        .forEach((track) => (track.enabled = false));
+      this.micEnabled = false;
+      console.log("Microphone enabled");
     }
   }
 
@@ -575,9 +521,6 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           
           // Notify listeners that audio analysis is available
           this.onAudioData?.(this.audioOutputAnalyser, this.audioOutputContext);
-
-          // Start volume analysis loop
-          this.startVolumeAnalysis();
         }
       };
     } catch (error) {
