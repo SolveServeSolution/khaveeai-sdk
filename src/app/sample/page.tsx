@@ -1,15 +1,28 @@
 "use client";
 import { KhaveeProvider, VRMAvatar } from "@khaveeai/react";
 import { CameraControls, Environment } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useLoader } from "@react-three/fiber";
+import { TextureLoader } from "three";
 import Animation from "./components/Animation";
 import Expression from "./components/Expression";
 import LipSync from "./components/Lipsync";
 import { OpenAIRealtimeProvider } from "@khaveeai/providers-openai-realtime";
 import Chat from "./components/Chat";
 import ModelSelector, { Model } from "@/app/sample/components/ModelSelector";
+import MFCCRecorder from "./components/MFCCRecorder";
 import { useRef, useState } from "react";
 import { searchKnowledgeBase } from "./lib/rag"; // Import server action
+
+function Background() {
+  const texture = useLoader(TextureLoader, "  /background.jpg");
+  
+  return (
+    <mesh position={[0, 0, -5]} scale={[7,7,1]}>
+      <planeGeometry />
+      <meshBasicMaterial map={texture} />
+    </mesh>
+  );
+}
 
 export default function page() {
   const controls = useRef(null);
@@ -17,6 +30,7 @@ export default function page() {
     "/models/male/nongkhavee_male_01.vrm"
   );
   const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showMFCCRecorder, setShowMFCCRecorder] = useState(false);
 
   const realtime = new OpenAIRealtimeProvider({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
@@ -49,7 +63,7 @@ export default function page() {
     idle: "/models/animations/idle.fbx",
     fight: "/models/animations/Fist Fight B.fbx",
     talking: "/models/animations/talking.fbx",
-    // talking1: "/models/animations/talking1.fbx",
+    talking1: "/models/animations/talking1.fbx",
   };
 
   const handleModelSelect = (model: Model) => {
@@ -69,35 +83,59 @@ export default function page() {
           minDistance={1}
           maxDistance={10}
         />
-        {/* <VRMAvatar
+        
+        {/* Background Image */}
+        <Background />
+
+        <VRMAvatar
           src={currentModel}
           animations={animations}
           position-y={-1.25}
+          position-x={1}
           enableBlinking={true}
-        /> */}
-        <ambientLight intensity={0.5} />
+        />
+        <ambientLight intensity={1} />
         <Environment preset="sunset" />
         <directionalLight position={[5, 5, 5]} intensity={1} />
-        <color attach="background" args={["#333"]} />
       </Canvas>
       <div className="absolute bottom-10 left-10 flex gap-10 items-end">
-        <Animation />
-        <Expression />
+        {/* <Animation /> */}
+        {/* <Expression /> */}
         <LipSync />
       </div>
-      <div className="absolute bottom-10 right-10">
+      {/* <div className="absolute bottom-10 right-10">
         <Chat />
-        {/* Model Selector Button */}
-        {/* <button
+        <button
+          onClick={() => setShowMFCCRecorder(!showMFCCRecorder)}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg mb-2 transition-colors"
+        >
+          {showMFCCRecorder ? "Hide MFCC Recorder" : "📊 MFCC Recorder"}
+        </button>
+        <button
           onClick={() => setShowModelSelector(!showModelSelector)}
           className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg mb-2 transition-colors"
         >
           {showModelSelector ? "Hide Models" : "Change Avatar"}
-        </button> */}
-      </div>
+        </button>
+      </div> */}
+
+      {/* MFCC Recorder Modal */}
+      {/* {showMFCCRecorder && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
+          <div className="relative max-w-4xl w-full">
+            <button
+              onClick={() => setShowMFCCRecorder(false)}
+              className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full z-10"
+            >
+              ✕
+            </button>
+            <MFCCRecorder />
+          </div>
+        </div>
+      )} */}
 
       {/* Model Selector Modal */}
-      {showModelSelector && (
+      {/* {showModelSelector && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <ModelSelector
@@ -114,7 +152,7 @@ export default function page() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </KhaveeProvider>
   );
 }

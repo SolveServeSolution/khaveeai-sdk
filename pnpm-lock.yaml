@@ -38,6 +38,9 @@ importers:
       leva:
         specifier: ^0.10.0
         version: 0.10.0(@types/react@19.1.13)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      meyda:
+        specifier: ^5.6.3
+        version: 5.6.3
       next:
         specifier: 15.5.3
         version: 15.5.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -134,8 +137,8 @@ importers:
   packages/providers/openai-realtime:
     dependencies:
       '@khaveeai/core':
-        specifier: workspace:*
-        version: link:../../core
+        specifier: ^0.1.2
+        version: 0.1.2
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.1.0
@@ -150,8 +153,8 @@ importers:
   packages/providers/rag:
     dependencies:
       '@khaveeai/core':
-        specifier: workspace:*
-        version: link:../../core
+        specifier: ^0.1.2
+        version: 0.1.2
       '@qdrant/js-client-rest':
         specifier: ^1.11.0
         version: 1.15.1(typescript@5.9.2)
@@ -426,6 +429,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@khaveeai/core@0.1.2':
+    resolution: {integrity: sha512-BYTKl2aUfLxhglhjaPjA9+CQR0asryDP/pLPcF8xEWMylMBLKlAaG2YetATLMJd6YWUfOW28I0DB7w1Diu9DOw==}
 
   '@mediapipe/tasks-vision@0.10.17':
     resolution: {integrity: sha512-CZWV/q6TTe8ta61cZXjfnnHsfWIdFhms03M9T7Cnd5y2mdpylJM0rF1qRq+wsQVRMLz1OYPVEBU9ph2Bx8cxrg==}
@@ -2985,6 +2991,11 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@khaveeai/core@0.1.2':
+    dependencies:
+      '@pixiv/three-vrm': 3.4.2(three@0.180.0)
+      three: 0.180.0
 
   '@mediapipe/tasks-vision@0.10.17': {}
 

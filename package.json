@@ -2,7 +2,15 @@
   "name": "@khaveeai/sdk",
   "version": "0.1.0",
   "description": "KhaveeAI VRM Avatar SDK - A comprehensive toolkit for creating interactive AI-powered avatars",
-  "keywords": ["vrm", "avatar", "ai", "3d", "animation", "realtime", "sdk"],
+  "keywords": [
+    "vrm",
+    "avatar",
+    "ai",
+    "3d",
+    "animation",
+    "realtime",
+    "sdk"
+  ],
   "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
   "repository": {
     "type": "git",
@@ -18,7 +26,7 @@
   },
   "workspaces": [
     "packages/core",
-    "packages/react", 
+    "packages/react",
     "packages/providers/*"
   ],
   "scripts": {
@@ -37,15 +45,16 @@
   },
   "dependencies": {
     "@khaveeai/core": "workspace:*",
-    "@khaveeai/react": "workspace:*",
     "@khaveeai/providers-mock": "workspace:*",
     "@khaveeai/providers-openai-realtime": "workspace:*",
+    "@khaveeai/react": "workspace:*",
     "@pixiv/three-vrm": "^3.4.2",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",
     "@react-three/postprocessing": "^3.0.4",
     "@types/three": "^0.180.0",
     "leva": "^0.10.0",
+    "meyda": "^5.6.3",
     "next": "15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
