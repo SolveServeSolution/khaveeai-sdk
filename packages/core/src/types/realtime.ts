@@ -79,4 +79,10 @@ export interface RealtimeProvider extends RealtimeEvents {
 
   // Audio analysis
   getAudioAnalyser(): { analyser: AnalyserNode; audioContext: AudioContext } | null;
+
+  // Microphone control
+  toggleMicrophone(): boolean;
+  enableMicrophone(): void;
+  disableMicrophone(): void;
+  isMicrophoneEnabled(): boolean;
 }

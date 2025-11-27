@@ -510,6 +510,69 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   }
 
   /**
+   * Toggle microphone on/off
+   */
+  toggleMicrophone(): boolean {
+    if (!this.audioStream) {
+      console.warn("No audio stream available - microphone cannot be toggled");
+      return false;
+    }
+
+    const isEnabled = this.audioStream.getAudioTracks()[0]?.enabled ?? false;
+
+    if (isEnabled) {
+      this.disableMicrophone();
+      return false;
+    } else {
+      this.enableMicrophone();
+      return true;
+    }
+  }
+
+  /**
+   * Enable microphone manually
+   */
+  enableMicrophone(): void {
+    if (!this.audioStream) {
+      console.warn("No audio stream available - microphone cannot be enabled");
+      return;
+    }
+
+    this.audioStream
+      .getAudioTracks()
+      .forEach((track) => (track.enabled = true));
+    this.micEnabled = true;
+    console.log("Microphone enabled manually");
+  }
+
+  /**
+   * Disable microphone manually
+   */
+  disableMicrophone(): void {
+    if (!this.audioStream) {
+      console.warn("No audio stream available - microphone cannot be disabled");
+      return;
+    }
+
+    this.audioStream
+      .getAudioTracks()
+      .forEach((track) => (track.enabled = false));
+    this.micEnabled = false;
+    console.log("Microphone disabled manually");
+  }
+
+  /**
+   * Get current microphone state
+   */
+  isMicrophoneEnabled(): boolean {
+    if (!this.audioStream) {
+      return false;
+    }
+
+    return this.audioStream.getAudioTracks()[0]?.enabled ?? false;
+  }
+
+  /**
    * Setup audio output analysis for lip sync
    */
   private setupAudioOutputAnalysis(peerConnection: RTCPeerConnection): void {

@@ -24,6 +24,7 @@ export function useRealtime() {
   const [conversation, setConversation] = useState<Conversation[]>([]);
   const [currentVolume, setCurrentVolume] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
+  const [isMicEnabled, setIsMicEnabled] = useState(false);
 
   // Lip sync state
   const [currentPhoneme, setCurrentPhoneme] = useState<PhonemeData | null>(
@@ -90,6 +91,10 @@ export function useRealtime() {
       setChatStatus(provider.chatStatus);
       setConversation(provider.conversation);
       setCurrentVolume(provider.currentVolume);
+      // Sync mic state with provider
+      if (provider.isMicrophoneEnabled) {
+        setIsMicEnabled(provider.isMicrophoneEnabled());
+      }
     };
 
     updateStates();
@@ -148,6 +153,23 @@ export function useRealtime() {
     [realtimeProvider]
   );
 
+  // Microphone control functions
+  const toggleMicrophone = useCallback(() => {
+    const newState = realtimeProvider.toggleMicrophone();
+    setIsMicEnabled(newState);
+    return newState;
+  }, [realtimeProvider]);
+
+  const enableMicrophone = useCallback(() => {
+    realtimeProvider.enableMicrophone();
+    setIsMicEnabled(true);
+  }, [realtimeProvider]);
+
+  const disableMicrophone = useCallback(() => {
+    realtimeProvider.disableMicrophone();
+    setIsMicEnabled(false);
+  }, [realtimeProvider]);
+
   // Auto lip sync functions
   const startAutoLipSync = useCallback(async () => {
     if (!realtimeProvider) return;
@@ -204,6 +226,7 @@ export function useRealtime() {
     currentVolume,
     isThinking,
     currentPhoneme, // Add lip sync state
+    isMicEnabled, // Add microphone state
 
     // Actions
     connect,
@@ -211,6 +234,11 @@ export function useRealtime() {
     sendMessage,
     interrupt,
     registerFunction,
+
+    // Microphone controls
+    toggleMicrophone,
+    enableMicrophone,
+    disableMicrophone,
 
     // Lip sync controls for debugging
     startAutoLipSync,

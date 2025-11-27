@@ -12,7 +12,9 @@ export default function Chat() {
     disconnect,
     startAutoLipSync,
     stopAutoLipSync,
-    currentVolume
+    currentVolume,
+    toggleMicrophone,
+    isMicEnabled
   } = useRealtime();
   const [input, setInput] = useState("");
   return (
@@ -30,6 +32,12 @@ export default function Chat() {
         </div>
       </div>
       <p>{currentVolume}</p>
+        <button
+          className="bg-blue-500 text-white p-2 rounded-lg"
+          onClick={toggleMicrophone}
+        >
+          Toggle Microphone :{isMicEnabled ? "On" : "Off"}
+        </button>
 
       {!isConnected && (
         <button
