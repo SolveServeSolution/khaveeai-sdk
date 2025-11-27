@@ -678,7 +678,6 @@ const config = {
 **Check these:**
 1. ✅ Provider configured in `<KhaveeProvider config={...}>`
 2. ✅ API keys are valid
-3. ✅ Called `useLLM()` or `useVoice()` inside provider
 
 ---
 
