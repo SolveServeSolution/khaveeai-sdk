@@ -22,29 +22,49 @@ npm install @khaveeai/providers-rag @khaveeai/providers-openai-realtime @khaveea
 
 ## 🚀 Quick Start
 
-### 1. Basic Setup (Easiest)
+### 1. Next.js with Server Actions (Recommended)
 
 ```tsx
-import { RAGProvider, createRAGTool } from "@khaveeai/providers-rag";
+// app/lib/rag.ts
+"use server"
+import { RAGProvider } from "@khaveeai/providers-rag";
+
+export async function searchKnowledgeBase(query: string) {
+  const ragProvider = new RAGProvider({
+    qdrantUrl: process.env.QDRANT_URL!,
+    qdrantApiKey: process.env.QDRANT_API_KEY,
+    collectionName: process.env.QDRANT_COLLECTION!,
+    openaiApiKey: process.env.OPENAI_API_KEY!,
+  });
+
+  return await ragProvider.search(query);
+}
+
+// app/page.tsx
+"use client";
 import { OpenAIRealtimeProvider } from "@khaveeai/providers-openai-realtime";
 import { KhaveeProvider, VRMAvatar } from "@khaveeai/react";
+import { searchKnowledgeBase } from "./lib/rag";
 
-// Create RAG provider
-const ragProvider = new RAGProvider({
-  qdrantUrl: "https://your-qdrant-instance.com",
-  qdrantApiKey: process.env.QDRANT_API_KEY,
-  collectionName: "your-collection",
-  openaiApiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
-});
-
-// Create RAG tool (one line!)
-const ragTool = createRAGTool({ ragProvider });
-
-// Add to realtime provider
 const realtime = new OpenAIRealtimeProvider({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
-  instructions: "You have access to a knowledge base. Use it to answer questions accurately.",
-  tools: [ragTool], // That's it!
+  instructions: "Use search_knowledge_base to answer questions accurately.",
+  tools: [
+    {
+      name: "search_knowledge_base",
+      description: "Search the knowledge base for relevant information",
+      parameters: {
+        query: {
+          type: "string",
+          description: "The search query",
+          required: true,
+        },
+      },
+      execute: async (args: { query: string }) => {
+        return await searchKnowledgeBase(args.query);
+      },
+    },
+  ],
 });
 
 export default function App() {
@@ -58,23 +78,21 @@ export default function App() {
 }
 ```
 
-### 2. Using Environment Variables
+### 2. Environment Variables
 
 ```bash
-# .env.local
-NEXT_PUBLIC_OPENAI_API_KEY=sk-...
+# .env.local (Next.js)
+# Server-side only (secure)
+OPENAI_API_KEY=sk-...
 QDRANT_URL=https://your-qdrant-instance.com
 QDRANT_API_KEY=your-qdrant-key
 QDRANT_COLLECTION=your-collection-name
+
+# Client-side (public)
+NEXT_PUBLIC_OPENAI_API_KEY=sk-...  # For OpenAI Realtime only
 ```
 
-```tsx
-const ragProvider = new RAGProvider({
-  qdrantUrl: process.env.QDRANT_URL!,
-  qdrantApiKey: process.env.QDRANT_API_KEY,
-  collectionName: process.env.QDRANT_COLLECTION!,
-  openaiApiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
-});
+**Security Note:** RAG operations should use server-side keys (no `NEXT_PUBLIC_` prefix) to keep your Qdrant and OpenAI embeddings API keys secure. Use Next.js server actions as shown above.
 ```
 
 ## ⚙️ Configuration
@@ -89,13 +107,16 @@ const ragProvider = new RAGProvider({
   openaiApiKey: "sk-...",
   
   // Optional
-  qdrantApiKey: "your-key",              // Optional if Qdrant is public
-  embeddingModel: "text-embedding-3-small", // Default
+  qdrantApiKey: "your-key",              // Required for protected Qdrant instances
+  embeddingModel: "text-embedding-3-large", // Default (3072 dimensions)
   topK: 10,                               // Number of results (default: 10)
   scoreThreshold: 0.21,                   // Minimum relevance (default: 0.21)
   includeMetadata: true,                  // Include metadata (default: true)
   metadataFields: ["title", "source"],    // Metadata to include
 });
+
+// Note: Make sure your Qdrant collection uses 3072-dimensional vectors
+// if using text-embedding-3-large (default)
 ```
 
 ### Custom Tool Configuration

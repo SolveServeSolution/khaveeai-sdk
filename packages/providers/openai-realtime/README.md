@@ -8,12 +8,13 @@ OpenAI Realtime API provider for Khavee AI SDK. Seamlessly integrate real-time v
 ## ✨ Features
 
 - 🎙️ **Real-time Voice Chat** - WebRTC-based audio streaming with OpenAI
-- 🗣️ **Automatic Lip Sync** - Built-in phoneme detection for VRM avatar mouth movements
-- ⚛️ **React First** - Designed specifically for React applications with hooks
-- 🛠️ **Function Calling** - Support for OpenAI function/tool calling
-- 📝 **Live Transcription** - Real-time speech-to-text conversion
-- 🎛️ **Status Management** - Comprehensive chat status tracking
-- 🎯 **Zero Config** - No additional API endpoints or backend required
+- 🗣️ **Automatic Lip Sync** - MFCC-based phoneme detection works automatically with VRMAvatar
+- 💬 **Talking Animations** - Auto-plays gesture animations during AI speech
+- ⚛️ **React Hooks** - `useRealtime()` hook for easy integration
+- 🛠️ **Function Calling** - Full support for OpenAI tools (RAG, custom functions)
+- 📝 **Live Transcription** - Real-time speech-to-text with conversation history
+- 🎛️ **Status Management** - Track connection, listening, thinking, and speaking states
+- 🎯 **Zero Backend** - Direct WebRTC connection to OpenAI (no proxy needed)
 
 ## 📦 Installation
 
@@ -32,9 +33,9 @@ import { OpenAIRealtimeProvider } from "@khaveeai/providers-openai-realtime";
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 
-// 1. Create the provider
+// 1. Create the provider (can be memoized with useMemo)
 const realtime = new OpenAIRealtimeProvider({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || "",
   instructions: "You are a helpful AI assistant.",
   voice: "coral"
 });
@@ -89,7 +90,10 @@ export default function App() {
 }
 ```
 
-That's it! Your VRM avatar will automatically lip sync with the AI's voice responses.
+That's it! Your VRM avatar will automatically:
+- 👄 Lip sync with the AI's voice using MFCC phoneme detection
+- 💬 Play talking/gesture animations during speech (if provided)
+- 👁️ Blink naturally for lifelike appearance
 
 ## 🎭 VRM Avatar Integration
 
@@ -138,12 +142,11 @@ interface RealtimeConfig {
 
 ### Available Voices
 
-- `coral` - Warm, friendly voice
-- `shimmer` - Clear, professional voice
+- `coral` - Warm, friendly voice (recommended)
 - `alloy` - Balanced, versatile voice
-- `nova` - Energetic, youthful voice
-- `echo` - Deep, resonant voice
+- `echo` - Deep, resonant voice  
 - `sage` - Wise, calm voice
+- `shimmer` - Clear, professional voice (deprecated but still works)
 
 ## ⚛️ React Hook API
 

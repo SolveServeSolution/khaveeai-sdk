@@ -9,12 +9,14 @@
 
 - 🤖 **Smart VRM Avatars** - 3D character rendering with Three.js/R3F
 - 🎤 **Real-time Voice Chat** - OpenAI Realtime API integration with WebRTC
-- 👄 **Audio-Based Lip Sync** - MFCC phoneme detection with Dynamic Time Warping
+- 👄 **Automatic Lip Sync** - MFCC-based phoneme detection works automatically with OpenAI Realtime
+- 💬 **Talking Animations** - Automatic gesture animations during AI speech
 - 🎬 **Animation System** - FBX animation loading with automatic Mixamo remapping
 - 😊 **Facial Expressions** - Smooth VRM expression control with transitions
-- 🔊 **LLM & TTS Support** - Optional AI chat and text-to-speech integration
-- 🛠️ **Function Calling** - Custom realtime tool integration
-- ⚡ **High Performance** - Optimized rendering with frustum culling disabled
+- 👁️ **Natural Blinking** - Randomized blinking animations for lifelike characters
+- 🔊 **Audio Lip Sync** - File-based lip sync analysis with MFCC and DTW algorithms
+- 🛠️ **Function Calling** - OpenAI tool integration for RAG and custom functions
+- ⚡ **High Performance** - Optimized rendering with automatic cleanup
 
 ## Installation
 
@@ -161,7 +163,7 @@ interface KhaveeConfig {
 
 #### `<VRMAvatar>`
 
-3D VRM character component with automatic animation and lip sync.
+3D VRM character component with automatic animation, lip sync, and talking animations.
 
 ```tsx
 interface VRMAvatarProps {
@@ -170,6 +172,8 @@ interface VRMAvatarProps {
   rotation?: [number, number, number];  
   scale?: [number, number, number];
   animations?: AnimationConfig;   // FBX animation URLs
+  enableBlinking?: boolean;       // Enable natural blinking (default: true)
+  enableTalkingAnimations?: boolean; // Enable gestures during AI speech (default: true)
 }
 ```
 
@@ -183,8 +187,12 @@ interface AnimationConfig {
 const animations = {
   idle: '/animations/breathing.fbx',     // Auto-plays on load
   walk: '/animations/walking.fbx',
-  dance: '/animations/dancing.fbx'
+  dance: '/animations/dancing.fbx',
+  talking: '/animations/talking.fbx',    // Played during AI speech
+  gesture1: '/animations/gesture.fbx'    // Also played during speech
 };
+// Note: Animations with 'talk', 'gesture', or 'speak' in the name
+// are automatically played randomly when chatStatus === 'speaking'
 ```
 
 ### Hooks
@@ -201,9 +209,15 @@ const {
   disconnect: () => Promise<void>,
   
   // Chat state  
-  chatStatus: 'ready' | 'listening' | 'speaking' | 'thinking',
+  chatStatus: 'stopped' | 'ready' | 'listening' | 'speaking' | 'thinking',
   conversation: Conversation[],
   currentVolume: number,
+  isThinking: boolean,
+  
+  // Lip sync (automatic with VRMAvatar)
+  currentPhoneme: PhonemeData | null,
+  startAutoLipSync: () => Promise<void>,
+  stopAutoLipSync: () => void,
   
   // Actions
   sendMessage: (text: string) => Promise<void>,
@@ -290,9 +304,45 @@ const {
 
 ## Advanced Usage
 
-### MFCC-Based Phoneme Detection
+### Automatic Lip Sync with OpenAI Realtime
 
-The `useAudioLipSync` hook uses advanced MFCC (Mel-Frequency Cepstral Coefficients) analysis with Dynamic Time Warping for accurate phoneme detection:
+When using `VRMAvatar` with `OpenAIRealtimeProvider`, lip sync happens automatically! The avatar's mouth movements are synchronized with the AI's speech using MFCC-based phoneme detection:
+
+```tsx
+import { KhaveeProvider, VRMAvatar } from '@khaveeai/react';
+import { OpenAIRealtimeProvider } from '@khaveeai/providers-openai-realtime';
+
+const realtime = new OpenAIRealtimeProvider({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+  voice: 'coral',
+});
+
+function App() {
+  return (
+    <KhaveeProvider config={{ realtime }}>  
+      <Canvas>
+        {/* Lip sync happens automatically when AI speaks! */}
+        <VRMAvatar 
+          src="/models/avatar.vrm"
+          enableBlinking={true}              // Natural blinking
+          enableTalkingAnimations={true}     // Gestures during speech
+        />
+      </Canvas>
+    </KhaveeProvider>
+  );
+}
+```
+
+The system automatically:
+- ✅ Analyzes AI voice audio in real-time
+- ✅ Detects phonemes (aa, ee, ih, ou, oh)
+- ✅ Applies mouth shapes to VRM expressions
+- ✅ Plays talking/gesture animations randomly
+- ✅ Resets mouth to neutral when AI stops speaking
+
+### Audio File Lip Sync
+
+For pre-recorded audio files, use the `useAudioLipSync` hook with advanced MFCC (Mel-Frequency Cepstral Coefficients) analysis and Dynamic Time Warping:
 
 ```tsx
 import { useAudioLipSync } from '@khaveeai/react';
@@ -401,15 +451,17 @@ function AnimationSequence() {
 import { OpenAIRealtimeProvider } from '@khaveeai/providers-openai-realtime';
 
 const provider = new OpenAIRealtimeProvider({
-  apiKey: string,                    // OpenAI API key
-  model?: 'gpt-4o-realtime-preview', // Model name
-  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
+  apiKey: string,                    // OpenAI API key (required)
+  model?: string,                    // Model name (default: 'gpt-4o-realtime-preview-2025-06-03')
+  voice?: 'alloy' | 'coral' | 'echo' | 'sage' | 'shimmer', // Voice selection
   instructions?: string,             // System prompt
-  temperature?: number,              // Response randomness
-  tools?: RealtimeTool[],           // Custom functions
-  enableLipSync?: boolean,          // Audio analysis for lip sync
-  language?: string                 // Response language
+  temperature?: number,              // Response randomness (0-1)
+  tools?: RealtimeTool[],           // Custom functions for RAG, etc.
+  language?: string,                // Response language code
+  turnServers?: RTCIceServer[]      // Custom TURN servers for WebRTC
 });
+
+// Lip sync is automatic when used with VRMAvatar!
 ```
 
 ### Mock Providers (Development)
