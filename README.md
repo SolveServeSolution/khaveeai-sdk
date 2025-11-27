@@ -12,12 +12,16 @@ Build immersive AI experiences with realistic 3D avatars that can talk, express 
 
 ## ✨ Features
 
+- 🎤 **Real-time Voice Chat** - OpenAI Realtime API with WebRTC (no backend needed)
+- 👄 **Automatic Lip Sync** - MFCC-based phoneme detection syncs with AI speech
+- 💬 **Talking Animations** - Auto-plays gestures during AI conversations
 - 🎨 **Facial Expressions** - Control 30+ VRM expressions with smooth transitions
 - 💃 **Body Animations** - Load and play Mixamo animations via simple URLs
-- 🤖 **LLM Integration** - Built-in chat streaming with any LLM provider
-- 🗣️ **Text-to-Speech** - Voice synthesis with expression sync
+- 🔍 **RAG Support** - Built-in vector search with Qdrant for knowledge bases
+- 👁️ **Natural Blinking** - Randomized blinking for lifelike avatars
+- 🛠️ **Function Calling** - OpenAI tools for custom functions and RAG
 - 🎯 **Simple API** - URL-based animations, no complex setup
-- 📦 **Provider System** - Plug-and-play OpenAI, Azure, or custom providers
+- 📦 **Provider System** - Plug-and-play OpenAI Realtime, Mock, or custom providers
 - 🎭 **Auto-Remapping** - Mixamo animations work out of the box
 - 💪 **TypeScript** - Full type safety and IntelliSense support
 - ⚡ **React Three Fiber** - Built on the industry-standard 3D React framework
@@ -48,16 +52,16 @@ pnpm add @khaveeai/react @khaveeai/core
 yarn add @khaveeai/react @khaveeai/core
 ```
 
-### Optional: LLM/TTS Providers
+### Optional: Provider Packages
 
 ```bash
-# For OpenAI
-npm install @khaveeai/providers-openai
+# For OpenAI Realtime API (voice chat + lip sync)
+npm install @khaveeai/providers-openai-realtime
 
-# For Azure
-npm install @khaveeai/providers-azure
+# For RAG (Retrieval-Augmented Generation)
+npm install @khaveeai/providers-rag
 
-# For development/testing
+# For development/testing (no API keys needed)
 npm install @khaveeai/providers-mock
 ```
 
@@ -107,6 +111,8 @@ const animations = {
   idle: '/animations/idle.fbx',        // Auto-plays on load
   walk: '/animations/walk.fbx',
   dance: '/animations/dance.fbx',
+  talking: '/animations/talking.fbx',  // Played during AI speech
+  gesture1: '/animations/gesture.fbx'  // Also played during speech
 };
 
 function App() {
@@ -116,6 +122,8 @@ function App() {
         <VRMAvatar 
           src="/models/character.vrm"
           animations={animations}
+          enableBlinking={true}              // Natural blinking
+          enableTalkingAnimations={true}     // Gestures during speech
         />
       </Canvas>
     </KhaveeProvider>
@@ -123,48 +131,61 @@ function App() {
 }
 ```
 
-### With LLM & Voice
+**Note:** Animations with 'talk', 'gesture', or 'speak' in the name are automatically played randomly when the AI is speaking.
+
+### With OpenAI Realtime (Voice Chat + Lip Sync)
 
 ```tsx
-import { KhaveeProvider, VRMAvatar, useLLM, useVoice } from '@khaveeai/react';
-import { OpenAIProvider } from '@khaveeai/providers-openai';
-
-const config = {
-  llm: new OpenAIProvider({ apiKey: 'your-key' }),
-  voice: new OpenAIProvider({ apiKey: 'your-key' }),
-};
+"use client";
+import { KhaveeProvider, VRMAvatar, useRealtime } from '@khaveeai/react';
+import { OpenAIRealtimeProvider } from '@khaveeai/providers-openai-realtime';
+import { Canvas } from '@react-three/fiber';
+import { useMemo } from 'react';
 
 function ChatInterface() {
-  const { streamChat } = useLLM();
-  const { speak } = useVoice();
-
-  const handleChat = async (userMessage: string) => {
-    let response = '';
-    
-    // Stream LLM response
-    for await (const chunk of streamChat({ 
-      messages: [{ role: 'user', content: userMessage }] 
-    })) {
-      if (chunk.type === 'text') {
-        response += chunk.delta;
-      }
-    }
-    
-    // Speak the response
-    await speak({ text: response });
-  };
+  const { 
+    isConnected, 
+    connect, 
+    disconnect, 
+    sendMessage,
+    conversation,
+    chatStatus 
+  } = useRealtime();
 
   return (
-    <button onClick={() => handleChat('Hello!')}>
-      Say Hello
-    </button>
+    <div>
+      {!isConnected ? (
+        <button onClick={connect}>🎤 Start Voice Chat</button>
+      ) : (
+        <div>
+          <div>Status: {chatStatus}</div>
+          <button onClick={() => sendMessage('Hello!')}>Say Hello</button>
+          <button onClick={disconnect}>Disconnect</button>
+          
+          {/* Conversation history */}
+          {conversation.map((msg, i) => (
+            <div key={i}>{msg.role}: {msg.text}</div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 export default function App() {
+  // Memoize provider to prevent recreation
+  const realtime = useMemo(() => 
+    new OpenAIRealtimeProvider({
+      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+      voice: 'coral',
+      instructions: 'You are a helpful AI assistant.',
+    }), []
+  );
+
   return (
-    <KhaveeProvider config={config}>
+    <KhaveeProvider config={{ realtime }}>  
       <Canvas>
+        {/* Lip sync happens automatically! */}
         <VRMAvatar src="/models/character.vrm" />
       </Canvas>
       <ChatInterface />
@@ -172,6 +193,12 @@ export default function App() {
   );
 }
 ```
+
+**✨ Automatic Features:**
+- Lip sync with MFCC phoneme detection
+- Talking animations during speech
+- Natural blinking
+- WebRTC connection (no backend needed)
 
 ---
 
@@ -294,6 +321,8 @@ Renders a VRM 3D character with animations and expressions.
   position={[0, -1, 0]}
   rotation={[0, Math.PI, 0]}
   scale={[1, 1, 1]}
+  enableBlinking={true}
+  enableTalkingAnimations={true}
 />
 ```
 
@@ -303,6 +332,8 @@ Renders a VRM 3D character with animations and expressions.
 - `position?` - 3D position `[x, y, z]` (default: `[0, 0, 0]`)
 - `rotation?` - 3D rotation `[x, y, z]` (default: `[0, Math.PI, 0]`)
 - `scale?` - 3D scale `[x, y, z]` (default: `[1, 1, 1]`)
+- `enableBlinking?` - Enable natural blinking (default: `true`)
+- `enableTalkingAnimations?` - Enable gestures during AI speech (default: `true`)
 
 ---
 
@@ -351,31 +382,53 @@ animate('dance');      // Play dance animation
 stopAnimation();       // Stop all
 ```
 
-#### `useLLM()`
+#### `useRealtime()`
 
-Stream chat responses from LLM providers.
+Real-time voice chat with OpenAI Realtime API.
 
 ```tsx
-const { streamChat } = useLLM();
+const { 
+  isConnected,
+  connect,
+  disconnect,
+  sendMessage,
+  conversation,
+  chatStatus,
+  currentPhoneme,  // Current phoneme for lip sync
+  interrupt        // Interrupt AI speech
+} = useRealtime();
 
 // Usage
-for await (const chunk of streamChat({ messages })) {
-  if (chunk.type === 'text') {
-    console.log(chunk.delta);
-  }
-}
+await connect();              // Start voice chat
+await sendMessage('Hello!');  // Send text message
+interrupt();                   // Stop AI from speaking
+await disconnect();            // End session
 ```
 
-#### `useVoice()`
+**Chat Status Values:**
+- `stopped` - Not connected
+- `ready` - Connected, waiting
+- `listening` - User is speaking
+- `thinking` - AI is processing
+- `speaking` - AI is responding
 
-Text-to-speech with speaking state tracking.
+#### `useAudioLipSync()`
+
+Analyze audio files for lip sync (separate from realtime).
 
 ```tsx
-const { speak, speaking } = useVoice();
+const { 
+  analyzeLipSync, 
+  stopLipSync, 
+  isAnalyzing,
+  currentPhoneme 
+} = useAudioLipSync();
 
 // Usage
-await speak({ text: 'Hello world!' });
-await speak({ text: 'Hello!', voice: 'female' });
+await analyzeLipSync('/audio/speech.wav', {
+  sensitivity: 0.8,
+  intensityMultiplier: 3.0
+});
 ```
 
 #### `useVRM()`
@@ -407,20 +460,29 @@ const {
 
 ## 🎯 Common Patterns
 
-### Talking Avatar with Expressions
+### Real-time Voice Chat with Expressions
 
 ```tsx
-function TalkingAvatar() {
-  const { speak } = useVoice();
-  const { setExpression, resetExpressions } = useVRMExpressions();
+function VoiceChat() {
+  const { isConnected, connect, chatStatus } = useRealtime();
+  const { setExpression } = useVRMExpressions();
 
-  const sayHello = async () => {
-    setExpression('happy', 1);
-    await speak({ text: 'Hello! How are you today?' });
-    resetExpressions();
-  };
+  // Set expressions based on chat status
+  useEffect(() => {
+    if (chatStatus === 'listening') {
+      setExpression('surprised', 0.3);
+    } else if (chatStatus === 'thinking') {
+      setExpression('neutral', 1);
+    } else if (chatStatus === 'speaking') {
+      setExpression('happy', 0.7);
+    }
+  }, [chatStatus]);
 
-  return <button onClick={sayHello}>Say Hello</button>;
+  return (
+    <button onClick={connect} disabled={isConnected}>
+      🎤 Start Voice Chat
+    </button>
+  );
 }
 ```
 
@@ -440,39 +502,37 @@ function DanceWithJoy() {
 }
 ```
 
-### LLM Chat with Voice Response
+### Text Input with Voice Response
 
 ```tsx
-function ChatBot() {
-  const { streamChat } = useLLM();
-  const { speak } = useVoice();
-  const { setExpression } = useVRMExpressions();
+function TextChat() {
+  const { sendMessage, conversation, chatStatus } = useRealtime();
+  const [input, setInput] = useState('');
 
-  const chat = async (userMessage: string) => {
-    let response = '';
-    
-    // Stream response
-    for await (const chunk of streamChat({ 
-      messages: [{ role: 'user', content: userMessage }] 
-    })) {
-      if (chunk.type === 'text') {
-        response += chunk.delta;
-      }
-    }
-    
-    // Speak with expression
-    setExpression('happy', 0.8);
-    await speak({ text: response });
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    await sendMessage(input);
+    setInput('');
   };
 
   return (
-    <input 
-      onKeyPress={(e) => {
-        if (e.key === 'Enter') {
-          chat(e.currentTarget.value);
-        }
-      }}
-    />
+    <div>
+      <div className="messages">
+        {conversation.map((msg, i) => (
+          <div key={i}>
+            <strong>{msg.role}:</strong> {msg.text}
+          </div>
+        ))}
+      </div>
+      
+      <input 
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+        disabled={chatStatus === 'speaking'}
+      />
+      <button onClick={handleSend}>Send</button>
+    </div>
   );
 }
 ```
@@ -481,68 +541,84 @@ function ChatBot() {
 
 ## 🔌 Providers
 
+### OpenAI Realtime Provider (Recommended)
+
+Real-time voice chat with automatic lip sync:
+
+```tsx
+import { OpenAIRealtimeProvider } from '@khaveeai/providers-openai-realtime';
+import { useMemo } from 'react';
+
+function App() {
+  const realtime = useMemo(() => 
+    new OpenAIRealtimeProvider({
+      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+      voice: 'coral',  // or: alloy, echo, sage, shimmer
+      instructions: 'You are a helpful AI assistant.',
+      temperature: 0.8,
+      tools: []  // Optional: Add RAG or custom functions
+    }), []
+  );
+
+  return (
+    <KhaveeProvider config={{ realtime }}>  
+      {/* Your app */}
+    </KhaveeProvider>
+  );
+}
+```
+
+### RAG Provider
+
+Add knowledge base search to your AI:
+
+```tsx
+// app/lib/rag.ts (server-side)
+"use server";
+import { RAGProvider } from '@khaveeai/providers-rag';
+
+export async function searchKnowledgeBase(query: string) {
+  const rag = new RAGProvider({
+    qdrantUrl: process.env.QDRANT_URL!,
+    qdrantApiKey: process.env.QDRANT_API_KEY,
+    collectionName: process.env.QDRANT_COLLECTION!,
+    openaiApiKey: process.env.OPENAI_API_KEY!,
+  });
+  return await rag.search(query);
+}
+
+// app/page.tsx (client-side)
+"use client";
+const realtime = new OpenAIRealtimeProvider({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+  tools: [
+    {
+      name: 'search_knowledge_base',
+      description: 'Search the knowledge base',
+      parameters: {
+        query: { type: 'string', description: 'Search query', required: true }
+      },
+      execute: async (args) => await searchKnowledgeBase(args.query)
+    }
+  ]
+});
+```
+
 ### Mock Provider (Development)
 
 Perfect for testing without API keys:
 
 ```tsx
-import { MockProvider } from '@khaveeai/providers-mock';
+import { MockLLM, MockTTS } from '@khaveeai/providers-mock';
 
 const config = {
-  llm: new MockProvider(),
-  voice: new MockProvider(),
+  llm: new MockLLM(),
+  tts: new MockTTS(),
 };
-```
 
-### OpenAI Provider
-
-```tsx
-import { OpenAIProvider } from '@khaveeai/providers-openai';
-
-const config = {
-  llm: new OpenAIProvider({ 
-    apiKey: process.env.OPENAI_API_KEY 
-  }),
-  voice: new OpenAIProvider({ 
-    apiKey: process.env.OPENAI_API_KEY 
-  }),
-};
-```
-
-### Azure Provider
-
-```tsx
-import { AzureProvider } from '@khaveeai/providers-azure';
-
-const config = {
-  llm: new AzureProvider({ 
-    apiKey: process.env.AZURE_API_KEY,
-    endpoint: process.env.AZURE_ENDPOINT 
-  }),
-  voice: new AzureProvider({ 
-    apiKey: process.env.AZURE_API_KEY 
-  }),
-};
-```
-
-### Custom Provider
-
-Create your own provider:
-
-```tsx
-import { LLMProvider, VoiceProvider } from '@khaveeai/core';
-
-class CustomProvider implements LLMProvider, VoiceProvider {
-  async *streamChat({ messages }) {
-    // Your implementation
-    yield { type: 'text', delta: 'Hello!' };
-  }
-
-  async speak({ text, voice }) {
-    // Your implementation
-    return Promise.resolve();
-  }
-}
+<KhaveeProvider config={config}>
+  {/* Test your UI without API costs */}
+</KhaveeProvider>
 ```
 
 ---
