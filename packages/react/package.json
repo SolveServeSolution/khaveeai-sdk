@@ -1,6 +1,6 @@
 {
   "name": "@khaveeai/react",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "React components and hooks for VRM AI avatars",
   "keywords": ["react", "vrm", "avatar", "ai", "3d", "hooks", "components"],
   "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
@@ -38,7 +38,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@khaveeai/core": "^0.1.4",
+    "@khaveeai/core": "^0.1.5",
     "@pixiv/three-vrm": "^3.4.2",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",

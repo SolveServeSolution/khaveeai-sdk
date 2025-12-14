@@ -1,6 +1,6 @@
 {
   "name": "@khaveeai/providers-mock",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mock providers for KhaveeAI development",
   "keywords": ["mock", "provider", "development", "testing"],
   "homepage": "https://github.com/SolveServeSolution/khaveeai-sdk#readme",
@@ -38,7 +38,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@khaveeai/core": "workspace:*"
+    "@khaveeai/core": "^0.1.5"
   },
   "devDependencies": {
     "typescript": "^5"
