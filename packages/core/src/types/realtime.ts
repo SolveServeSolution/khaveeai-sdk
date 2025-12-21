@@ -25,7 +25,7 @@ export interface RealtimeTool {
  * Realtime provider configuration
  */
 export interface RealtimeConfig {
-  apiKey: string;
+  apiKey?: string;
   model?: 'gpt-4o-realtime-preview' | 'gpt-4o-mini-realtime-preview';
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' | 'coral' | 'sage';
   instructions?: string;
@@ -35,6 +35,19 @@ export interface RealtimeConfig {
   speed?: number;
   enableLipSync?: boolean;
   language?: string;
+  
+  /**
+   * Security: Use server-side proxy to keep API key secure
+   * When enabled, SDK sends SDP to your API endpoint instead of OpenAI directly
+   */
+  useProxy?: boolean;
+  
+  /**
+   * Your server endpoint that proxies SDP negotiation to OpenAI
+   * Defaults to '/api/negotiate'
+   * Required when useProxy is true
+   */
+  proxyEndpoint?: string;
 }
 
 /**

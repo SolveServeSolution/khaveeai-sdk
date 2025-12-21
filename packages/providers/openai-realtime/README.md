@@ -16,13 +16,13 @@ OpenAI Realtime API provider for Khavee AI SDK. Seamlessly integrate real-time v
 - 🎛️ **Status Management** - Track connection, listening, thinking, and speaking states
 - 🎯 **Zero Backend** - Direct WebRTC connection to OpenAI (no proxy needed)
 
-## 📦 Installation
+##  Installation
 
 ```bash
 npm install @khaveeai/providers-openai-realtime @khaveeai/react @khaveeai/core
 ```
 
-## 🚀 Quick Start with React + VRM
+##  Quick Start with React + VRM
 
 Here's how to create a complete VRM avatar with voice chat in just a few lines:
 
@@ -122,13 +122,99 @@ function App() {
 }
 ```
 
+## 🔒 Security Best Practices
+
+### Recommended: Use Server-Side Proxy
+
+**❌ Don't expose your API key in client code:**
+
+```tsx
+// BAD: API key visible in browser bundle
+const provider = new OpenAIRealtimeProvider({
+  apiKey: "sk-...",  // Anyone can steal this!
+});
+```
+
+**✅ Instead, use a server-side proxy to keep your API key secure:**
+
+```tsx
+// GOOD: API key stays on server
+const provider = new OpenAIRealtimeProvider({
+  useProxy: true,
+  proxyEndpoint: '/api/negotiate',
+  voice: 'shimmer',
+  instructions: 'You are a helpful assistant',
+});
+```
+
+### Setup Guide
+
+1. **Create API Route** (`app/api/negotiate/route.ts`):
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  const sdpOffer = await request.text();
+  
+  // API key stored server-side only
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  // Proxy SDP to OpenAI
+  const response = await fetch(
+    'https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/sdp',
+      },
+      body: sdpOffer,
+    }
+  );
+  
+  const sdpAnswer = await response.text();
+  return new NextResponse(sdpAnswer, {
+    headers: { 'Content-Type': 'application/sdp' },
+  });
+}
+```
+
+2. **Add to `.env.local`**:
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+3. **Use in your component**:
+
+```tsx
+const provider = useMemo(
+  () => new OpenAIRealtimeProvider({
+    useProxy: true,
+    proxyEndpoint: '/api/negotiate',
+    voice: 'coral',
+  }),
+  []
+);
+```
+
+📚 **Full example**: See [`examples/nextjs-api-proxy`](../../examples/nextjs-api-proxy) for complete setup with detailed comments.
+
 ## Configuration
 
 ### RealtimeConfig
 
 ```typescript
 interface RealtimeConfig {
-  apiKey: string;                    // OpenAI API key
+  // Security options (recommended for production)
+  useProxy?: boolean;                // Use server-side proxy instead of direct API key
+  proxyEndpoint?: string;            // Your API endpoint (default: '/api/negotiate')
+  
+  // Authentication (not needed if using proxy)
+  apiKey?: string;                   // OpenAI API key (⚠️ exposes key in client)
+  
+  // Model configuration
   model?: string;                    // Model to use (default: 'gpt-4o-realtime-preview')
   voice?: string;                    // Voice to use (default: 'shimmer')
   instructions?: string;             // System instructions

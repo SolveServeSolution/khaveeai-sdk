@@ -59,8 +59,17 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       voice: "shimmer",
       temperature: 0.8,
       speed: 1.4,
+      proxyEndpoint: "/api/negotiate",
       ...config,
     };
+
+    // Validate configuration
+    if (!this.config.useProxy && !this.config.apiKey) {
+      throw new Error(
+        "Either apiKey or useProxy must be provided. " +
+        "For security in production, use useProxy to keep your API key server-side."
+      );
+    }
 
     this.toolExecutor = new ToolExecutor();
 
@@ -114,20 +123,34 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Send directly to OpenAI Realtime API (no separate API endpoint needed)
-      const response = await fetch(
-        `https://api.openai.com/v1/realtime?model=${
-          this.config.model || "gpt-4o-realtime-preview-2025-06-03"
-        }&voice=${this.config.voice || "coral"}`,
-        {
+      let response: Response;
+
+      if (this.config.useProxy) {
+        // Security: Send SDP to your server proxy endpoint
+        // Your server will forward it to OpenAI with API key server-side
+        response = await fetch(this.config.proxyEndpoint!, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
             "Content-Type": "application/sdp",
           },
           body: offer.sdp,
-        }
-      );
+        });
+      } else {
+        // Direct connection to OpenAI (API key exposed on client - not recommended for production)
+        response = await fetch(
+          `https://api.openai.com/v1/realtime?model=${
+            this.config.model || "gpt-4o-realtime-preview-2025-06-03"
+          }&voice=${this.config.voice || "coral"}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${this.config.apiKey}`,
+              "Content-Type": "application/sdp",
+            },
+            body: offer.sdp,
+          }
+        );
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
