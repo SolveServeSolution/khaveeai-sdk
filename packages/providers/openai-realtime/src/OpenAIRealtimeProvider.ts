@@ -12,6 +12,7 @@ import {
 } from "@khaveeai/core";
 import { v4 as uuidv4 } from "uuid";
 import { ToolExecutor } from "./ToolExecutor";
+import { MCPToolManager } from "./mcp/MCPToolManager";
 
 export class OpenAIRealtimeProvider implements RealtimeProvider {
   private config: RealtimeConfig;
@@ -20,6 +21,10 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   private audioContext: AudioContext | null = null;
   private audioStream: MediaStream | null = null;
   private toolExecutor: ToolExecutor;
+  private manualTools: RealtimeTool[] = [];
+  private mcpTools: RealtimeTool[] = [];
+  private mcpManager?: MCPToolManager;
+  private mcpInitialization?: Promise<void>;
 
   // State
   public isConnected = false;
@@ -64,9 +69,20 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
 
     this.toolExecutor = new ToolExecutor();
 
-    // Register initial tools
     if (this.config.tools) {
-      this.config.tools.forEach((tool) => this.registerFunction(tool));
+      this.config.tools.forEach((tool) => this.registerTool(tool, "manual"));
+    }
+
+    if (this.config.mcpServers && this.config.mcpServers.length > 0) {
+      this.mcpManager = new MCPToolManager(this.config.mcpServers);
+      this.mcpInitialization = this.mcpManager
+        .initialize()
+        .then((tools) => {
+          tools.forEach((tool) => this.registerTool(tool, "mcp"));
+        })
+        .catch((error) => {
+          console.error("Failed to initialize MCP servers:", error);
+        });
     }
   }
 
@@ -98,7 +114,7 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       this.dataChannel = dataChannel;
 
       dataChannel.onopen = () => {
-        this.configureSession();
+        void this.configureSession();
       };
       dataChannel.onmessage = (event) => {
         this.handleDataChannelMessage(event);
@@ -247,14 +263,42 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
    * Register a function/tool
    */
   registerFunction(tool: RealtimeTool): void {
+    this.registerTool(tool, "manual");
+  }
+
+  private registerTool(tool: RealtimeTool, origin: "manual" | "mcp"): void {
     this.toolExecutor.register(tool.name, tool.execute);
+    const target = origin === "manual" ? this.manualTools : this.mcpTools;
+    const existingIndex = target.findIndex((existing) => existing.name === tool.name);
+
+    if (existingIndex >= 0) {
+      target[existingIndex] = tool;
+    } else {
+      target.push(tool);
+    }
+  }
+
+  private getAllRegisteredTools(): RealtimeTool[] {
+    const combined = new Map<string, RealtimeTool>();
+    [...this.manualTools, ...this.mcpTools].forEach((tool) => {
+      combined.set(tool.name, tool);
+    });
+    return Array.from(combined.values());
   }
 
   /**
    * Configure the OpenAI session
    */
-  private configureSession(): void {
+  private async configureSession(): Promise<void> {
     if (!this.dataChannel) return;
+
+    if (this.mcpInitialization) {
+      try {
+        await this.mcpInitialization;
+      } catch (error) {
+        console.error("Failed to initialize MCP tools:", error);
+      }
+    }
 
     const sessionConfig: any = {
       modalities: ["text", "audio"],
@@ -275,14 +319,16 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
       },
     };
 
+    const tools = this.getAllRegisteredTools();
+
     // Only add tools and tool_choice if tools are provided
-    if (this.config.tools && this.config.tools.length > 0) {
-      sessionConfig.tools = this.config.tools.map((tool) => {
+    if (tools.length > 0) {
+      sessionConfig.tools = tools.map((tool) => {
         // Build parameters object, removing the 'required' field from each property
         const properties: any = {};
         const requiredFields: string[] = [];
 
-        Object.entries(tool.parameters).forEach(
+        Object.entries(tool.parameters || {}).forEach(
           ([key, param]: [string, any]) => {
             // Extract 'required' flag before adding to properties
             const { required, ...paramSchema } = param;

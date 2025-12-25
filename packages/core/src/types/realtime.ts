@@ -2,6 +2,48 @@ import { RealtimeMessage, Conversation, ChatStatus } from './conversation';
 import { MouthState, PhonemeData } from './audio';
 
 /**
+ * Configuration for connecting to an MCP server
+ */
+export interface MCPServerConfig {
+  /**
+   * Unique identifier for the server. Used for tool name prefixing.
+   */
+  id: string;
+  /**
+   * Streamable HTTP endpoint for the MCP server.
+   */
+  url: string;
+  /**
+   * Future-proofing for additional transports. Currently only streamable-http is supported.
+   */
+  transport?: 'streamable-http';
+  /**
+   * Optional HTTP headers to send on every transport request (e.g., auth tokens).
+   */
+  headers?: Record<string, string>;
+  /**
+   * Client identity used when registering with the MCP server.
+   */
+  client?: {
+    name?: string;
+    version?: string;
+    /**
+     * Capabilities object forwarded directly to the MCP client.
+     */
+    capabilities?: Record<string, unknown>;
+  };
+  /**
+   * Optional prefix used when exposing server tools inside the realtime provider.
+   * Defaults to `${id}__`.
+   */
+  toolNamePrefix?: string | null;
+  /**
+   * Extra metadata for application-specific use.
+   */
+  metadata?: Record<string, string>;
+}
+
+/**
  * Tool definition for function calling
  */
 export interface RealtimeTool {
@@ -31,6 +73,7 @@ export interface RealtimeConfig {
   instructions?: string;
   temperature?: number;
   tools?: RealtimeTool[];
+  mcpServers?: MCPServerConfig[];
   turnServers?: RTCIceServer[];
   speed?: number;
   enableLipSync?: boolean;

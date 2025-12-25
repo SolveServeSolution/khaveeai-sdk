@@ -312,6 +312,39 @@ const realtime = new OpenAIRealtimeProvider({
 realtime.registerFunction(weatherTool);
 ```
 
+### MCP Servers (Model Context Protocol)
+
+You can mount any number of MCP servers and expose their tools directly to OpenAI. Each server describes its tools via the MCP spec; the provider handles the rest (connections, pagination, name-spacing, execution, and returning results to the realtime session).
+
+```tsx
+const realtime = new OpenAIRealtimeProvider({
+  apiKey: process.env.OPENAI_API_KEY || "",
+  mcpServers: [
+    {
+      id: "docs",
+      url: process.env.DOCS_MCP_URL!,
+      headers: {
+        Authorization: `Bearer ${process.env.DOCS_MCP_TOKEN!}`,
+      },
+      toolNamePrefix: "docs__", // optional (defaults to `${id}__`)
+    },
+    {
+      id: "inventory",
+      url: process.env.INVENTORY_MCP_URL!,
+    },
+  ],
+});
+```
+
+`MCPServerConfig` options:
+
+- `id`: unique identifier. Also used as the default prefix for tools (`${id}__toolName`).
+- `url`: Streamable HTTP endpoint for the server (e.g., `https://.../mcp`).
+- `headers`: optional HTTP headers for auth.
+- `toolNamePrefix`: override the default prefix (set to `null` to keep original names).
+
+Remote tools are converted into OpenAI function definitions alongside any local `tools`, and responses are sent back through the MCP client automatically.
+
 ## 📱 Chat Status States
 
 The `chatStatus` property provides real-time feedback:

@@ -42,6 +42,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "@khaveeai/core": "^0.1.5",
     "uuid": "^13.0.0"
   },
