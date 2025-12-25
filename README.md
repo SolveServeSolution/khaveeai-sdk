@@ -604,6 +604,39 @@ const realtime = new OpenAIRealtimeProvider({
 });
 ```
 
+### MCP Tool Servers
+
+Connect your agent to any number of [Model Context Protocol](https://modelcontextprotocol.io/) servers. The SDK loads tool definitions from each server, namespaces them, and routes every invocation through MCP automatically.
+
+```tsx
+const realtime = new OpenAIRealtimeProvider({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY!,
+  mcpServers: [
+    {
+      id: "docs",
+      url: process.env.NEXT_PUBLIC_DOCS_MCP_URL!,
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_DOCS_MCP_TOKEN!}`,
+      },
+      toolNamePrefix: "docs__", // optional (defaults to `${id}__`)
+    },
+    {
+      id: "inventory",
+      url: process.env.NEXT_PUBLIC_INVENTORY_MCP_URL!,
+    },
+  ],
+});
+```
+
+What you get for free:
+
+- Streamable HTTP transport management for each MCP server.
+- Automatic pagination to fetch every declared tool.
+- Guaranteed unique tool names via configurable prefixes so OpenAI can call them safely.
+- Tool outputs are converted into OpenAI function responses, keeping the realtime session in sync.
+
+You can mix MCP-provided tools with traditional `tools` functions to blend local logic and remote capabilities.
+
 ### Mock Provider (Development)
 
 Perfect for testing without API keys:
