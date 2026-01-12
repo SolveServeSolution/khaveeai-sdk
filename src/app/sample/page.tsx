@@ -14,7 +14,7 @@ import { useRef, useState } from "react";
 import { searchKnowledgeBase } from "./lib/rag"; // Import server action
 
 function Background() {
-  const texture = useLoader(TextureLoader, "  /background.jpg");
+  const texture = useLoader(TextureLoader, "/background.jpg");
   
   return (
     <mesh position={[0, 0, -5]} scale={[7,7,1]}>

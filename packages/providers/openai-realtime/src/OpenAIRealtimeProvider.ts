@@ -36,6 +36,7 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
   // Audio streams for lip sync
   private audioOutputAnalyser: AnalyserNode | null = null;
   private audioOutputContext: AudioContext | null = null;
+  private audioElement: HTMLAudioElement | null = null;
 
   // Event handlers
   public onConnect?: () => void;
@@ -197,6 +198,11 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
     }
 
     this.audioOutputAnalyser = null;
+
+    if (this.audioElement) {
+      this.audioElement.srcObject = null;
+      this.audioElement = null;
+    }
 
     if (this.audioStream) {
       this.audioStream.getTracks().forEach((track) => track.stop());
@@ -606,6 +612,11 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
         const audioTrack = stream.getAudioTracks()[0];
 
         if (audioTrack) {
+          // Create HTMLAudioElement for actual playback (required for Chromium browsers)
+          this.audioElement = document.createElement('audio');
+          this.audioElement.autoplay = true;
+          this.audioElement.srcObject = stream;
+
           // Create audio context for analyzing OpenAI's output
           this.audioOutputContext = new AudioContext();
           const source =
@@ -616,11 +627,8 @@ export class OpenAIRealtimeProvider implements RealtimeProvider {
           this.audioOutputAnalyser.fftSize = 2048;
           this.audioOutputAnalyser.smoothingTimeConstant = 0.6;
 
-          // Connect source to analyser
+          // Connect source to analyser (no need to connect to destination, HTMLAudioElement handles playback)
           source.connect(this.audioOutputAnalyser);
-
-          // Also connect to destination for audio playback
-          source.connect(this.audioOutputContext.destination);
 
           // Notify listeners that audio analysis is available
           this.onAudioData?.(this.audioOutputAnalyser, this.audioOutputContext);
